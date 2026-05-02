@@ -34,20 +34,21 @@ const Settings = () => {
   );
   const [language, setLanguage] = useState('en');
 
-  const toggleTheme = () => {
-    const newMode = darkMode ? 'light' : 'dark';
-    setDarkMode(!darkMode);
-    setTheme(newMode);
-  };
+const toggleTheme = () => {
+  const newMode = darkMode ? 'light' : 'dark';
+  console.log('toggleTheme called, newMode:', newMode);
+  setDarkMode(!darkMode);
+  setTheme(newMode);
+};
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    toast.success('Logged out successfully');
-    navigate('/');
-  };
+const handleLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  toast.success('Logged out successfully');
+  navigate('/');
+};
 
-  return (
+return (
     <div className='pb-24'>
       <h1 className='text-2xl font-semibold mb-5'>Settings</h1>
 
