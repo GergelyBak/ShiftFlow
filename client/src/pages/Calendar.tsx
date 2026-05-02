@@ -165,7 +165,7 @@ const MonthView = ({ shifts, currentDate }: any) => {
 // =======================
 // 📅 WEEK VIEW (alap)
 // =======================
-const WeekView = ({ shifts, currentDate }: any) => {
+const WeekView = ({}: any) => {
   return (
     <div className='text-center text-gray-400 mt-10'>
       Weekly view coming soon...
