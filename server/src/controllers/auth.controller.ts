@@ -70,6 +70,7 @@ export const login = async (req: any, res: any) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        role: user.role, // ✅ ezt add hozzá
       },
     });
   } catch (error: any) {
