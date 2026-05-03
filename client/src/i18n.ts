@@ -60,10 +60,12 @@ i18n.use(initReactI18next).init({
         login: 'Login',
         welcomeBack: 'Welcome back',
         noAccount: "Don't have an account?",
+        locale: 'en',
       },
     },
     de: {
       translation: {
+        locale: 'de',
         registerSuccess: 'Konto erstellt! Weiterleitung zur Anmeldung...',
         greeting: 'Hallo {{name}}!',
         welcomeBack: 'Willkommen zurück',
