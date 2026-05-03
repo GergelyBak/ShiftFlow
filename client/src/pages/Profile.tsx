@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   BarChart,
@@ -14,37 +15,38 @@ import {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`;
 
   const sections = [
     {
-      items: [{ label: 'Personal Data', icon: User }],
+      items: [{ label: t('personalData'), icon: User }],
     },
     {
       items: [
-        { label: 'Accounts', icon: BarChart },
-        { label: 'Working Hours', icon: Clock },
-        { label: 'Absences', icon: Plane },
-        { label: 'Documents', icon: FileText },
+        { label: t('accounts'), icon: BarChart },
+        { label: t('workingHours'), icon: Clock },
+        { label: t('absences'), icon: Plane },
+        { label: t('documents'), icon: FileText },
       ],
     },
     {
       items: [
-        { label: 'Time Tracking', icon: Clock },
-        { label: 'Desired Times', icon: Heart },
+        { label: t('timeTracking'), icon: Clock },
+        { label: t('desiredTimes'), icon: Heart },
       ],
     },
     {
       items: [
-        { label: 'Access Data', icon: Key },
+        { label: t('accessData'), icon: Key },
         {
-          label: 'Settings',
+          label: t('settings'),
           icon: Settings,
           onClick: () => navigate('/settings'),
         },
-        { label: 'Help & Feedback', icon: Info },
+        { label: t('helpFeedback'), icon: Info },
       ],
     },
   ];
@@ -53,17 +55,16 @@ const Profile = () => {
     <div className='pb-24'>
       {/* HEADER */}
       <div className='flex items-center gap-4 mb-6'>
-        {/* AVATAR */}
         <div className='w-14 h-14 rounded-full bg-green-600 dark:bg-green-700 flex items-center justify-center text-lg font-semibold text-white'>
           {user.firstName?.[0]}
           {user.lastName?.[0]}
         </div>
-
-        {/* NAME */}
         <div>
-          <h1 className='text-xl font-semibold'>{fullName}</h1>
+          <h1 className='text-xl font-semibold text-slate-900 dark:text-white'>
+            {fullName}
+          </h1>
           <p className='text-sm text-slate-500 dark:text-slate-400'>
-            Your Company
+            {t('yourCompany')}
           </p>
         </div>
       </div>
@@ -82,9 +83,7 @@ const Profile = () => {
                 <div
                   key={index}
                   onClick={item.onClick}
-                  className='bg-white dark:bg-slate-900 flex items-center justify-between px-4 py-3.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors
-                    first:rounded-t-2xl last:rounded-b-2xl
-                    border-b border-slate-100 dark:border-slate-800 last:border-none'
+                  className='bg-white dark:bg-slate-900 flex items-center justify-between px-4 py-3.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors first:rounded-t-2xl last:rounded-b-2xl border-b border-slate-100 dark:border-slate-800 last:border-none'
                 >
                   <div className='flex items-center gap-3'>
                     <Icon
@@ -95,7 +94,6 @@ const Profile = () => {
                       {item.label}
                     </span>
                   </div>
-
                   <ChevronRight
                     size={16}
                     className='text-slate-300 dark:text-slate-600'

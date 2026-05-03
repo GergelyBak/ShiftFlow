@@ -7,7 +7,8 @@ const Calendar = () => {
   const [shifts, setShifts] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'week' | 'month'>('week');
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
 
   useEffect(() => {
     const fetchShifts = async () => {
@@ -43,15 +44,15 @@ const Calendar = () => {
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-  const weekLabel = `${startOfWeek.toLocaleDateString('de-DE', {
+  const weekLabel = `${startOfWeek.toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
-  })} - ${endOfWeek.toLocaleDateString('de-DE', {
+  })} - ${endOfWeek.toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
   })}`;
 
-  const monthLabel = currentDate.toLocaleString('en-GB', {
+  const monthLabel = currentDate.toLocaleString(locale, {
     month: 'long',
     year: 'numeric',
   });
@@ -104,9 +105,9 @@ const Calendar = () => {
       </div>
 
       {view === 'week' ? (
-        <WeekView shifts={shifts} startOfWeek={startOfWeek} />
+        <WeekView shifts={shifts} startOfWeek={startOfWeek} locale={locale} />
       ) : (
-        <MonthView shifts={shifts} currentDate={currentDate} />
+        <MonthView shifts={shifts} currentDate={currentDate} locale={locale} />
       )}
     </div>
   );
@@ -117,7 +118,7 @@ export default Calendar;
 // =======================
 // 📅 WEEK VIEW
 // =======================
-const WeekView = ({ shifts, startOfWeek }: any) => {
+const WeekView = ({ shifts, startOfWeek, locale }: any) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -134,16 +135,6 @@ const WeekView = ({ shifts, startOfWeek }: any) => {
     });
   };
 
-  const dayNames = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-
   return (
     <div className='space-y-2'>
       {weekDays.map((day, i) => {
@@ -151,7 +142,8 @@ const WeekView = ({ shifts, startOfWeek }: any) => {
         const isToday = day.toDateString() === today.toDateString();
         const isPast = day < today;
 
-        const dateLabel = day.toLocaleDateString('en-GB', {
+        const dayLabel = day.toLocaleDateString(locale, {
+          weekday: 'long',
           day: '2-digit',
           month: '2-digit',
         });
@@ -162,9 +154,7 @@ const WeekView = ({ shifts, startOfWeek }: any) => {
             className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl overflow-hidden'
           >
             <div
-              className={`px-4 py-2.5 flex items-center justify-between ${
-                isToday ? 'bg-green-50 dark:bg-green-900/20' : ''
-              }`}
+              className={`px-4 py-2.5 ${isToday ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
             >
               <span
                 className={`font-semibold text-sm ${
@@ -175,9 +165,11 @@ const WeekView = ({ shifts, startOfWeek }: any) => {
                       : 'text-slate-700 dark:text-slate-200'
                 }`}
               >
-                {dayNames[i]} {dateLabel}
+                {dayLabel}
                 {isToday && (
-                  <span className='ml-2 text-xs font-normal'>Today</span>
+                  <span className='ml-2 text-xs font-normal opacity-70'>
+                    Today
+                  </span>
                 )}
               </span>
             </div>
@@ -197,17 +189,15 @@ const WeekView = ({ shifts, startOfWeek }: any) => {
                       size={18}
                       className={isPast ? 'text-slate-400' : 'text-green-500'}
                     />
-                    <div className='flex-1'>
-                      <p
-                        className={`text-base font-bold tracking-tight ${
-                          isPast
-                            ? 'text-slate-400 dark:text-slate-500'
-                            : 'text-slate-800 dark:text-white'
-                        }`}
-                      >
-                        {shift.startTime} - {shift.endTime}
-                      </p>
-                    </div>
+                    <p
+                      className={`text-base font-bold tracking-tight ${
+                        isPast
+                          ? 'text-slate-400 dark:text-slate-500'
+                          : 'text-slate-800 dark:text-white'
+                      }`}
+                    >
+                      {shift.startTime} - {shift.endTime}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -222,14 +212,14 @@ const WeekView = ({ shifts, startOfWeek }: any) => {
 // =======================
 // 📅 MONTH VIEW
 // =======================
-const MonthView = ({ shifts, currentDate }: any) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
+const MonthView = ({ shifts, currentDate, locale }: any) => {
   const [selectedDay, setSelectedDay] = useState<{
     date: Date;
     shifts: any[];
   } | null>(null);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -260,11 +250,16 @@ const MonthView = ({ shifts, currentDate }: any) => {
     setSelectedDay({ date, shifts: dayShifts });
   };
 
+  const weekDayLabels =
+    locale === 'de-DE'
+      ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+      : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
   return (
     <>
       {/* WEEK DAYS HEADER */}
       <div className='grid grid-cols-7 mb-2'>
-        {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((d) => (
+        {weekDayLabels.map((d) => (
           <div
             key={d}
             className='text-center text-xs font-medium text-slate-400'
@@ -340,12 +335,12 @@ const MonthView = ({ shifts, currentDate }: any) => {
             <div className='flex items-center justify-between mb-4'>
               <div>
                 <p className='text-xs text-slate-400 uppercase tracking-wide font-medium'>
-                  {selectedDay.date.toLocaleDateString('en-GB', {
+                  {selectedDay.date.toLocaleDateString(locale, {
                     weekday: 'long',
                   })}
                 </p>
                 <p className='text-xl font-bold text-slate-900 dark:text-white'>
-                  {selectedDay.date.toLocaleDateString('en-GB', {
+                  {selectedDay.date.toLocaleDateString(locale, {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',
