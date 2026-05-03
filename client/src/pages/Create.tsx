@@ -1,39 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createShift } from '../api/shifts';
 import { toast } from 'react-toastify';
 import { addNotification } from '../utils/notifications';
+import { api } from '../api/axios';
+import { useTranslation } from 'react-i18next';
 
 const Create = () => {
   const [type, setType] = useState<'absence' | 'desired'>('desired');
+  const { t } = useTranslation();
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user?.role === 'admin';
 
   return (
-    <div className='text-white'>
-      {/* HEADER */}
-      <h1 className='text-2xl mb-6'>Create</h1>
+    <div className='pb-24'>
+      <h1 className='text-2xl font-semibold mb-5'>{t('create')}</h1>
 
-      {/* SWITCH */}
-      <div className='bg-black/50 rounded-full p-1 flex mb-6'>
+      <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex mb-5'>
         <button
           onClick={() => setType('absence')}
-          className={`flex-1 py-2 rounded-full ${
-            type === 'absence' ? 'bg-green-500 text-black' : 'text-gray-400'
+          className={`flex-1 py-2 rounded-full text-sm font-medium transition-colors ${
+            type === 'absence'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
-          Absence
+          {t('absence')}
         </button>
-
         <button
           onClick={() => setType('desired')}
-          className={`flex-1 py-2 rounded-full ${
-            type === 'desired' ? 'bg-green-500 text-black' : 'text-gray-400'
+          className={`flex-1 py-2 rounded-full text-sm font-medium transition-colors ${
+            type === 'desired'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
-          Desired Time
+          {t('desiredTime')}
         </button>
       </div>
 
-      {/* CONTENT */}
-      {type === 'desired' ? <DesiredForm /> : <AbsenceForm />}
+      {type === 'desired' ? <DesiredForm isAdmin={isAdmin} /> : <AbsenceForm />}
     </div>
   );
 };
@@ -43,74 +49,140 @@ export default Create;
 // ==========================
 // 🧱 DESIRED TIME FORM
 // ==========================
-const DesiredForm = () => {
+const DesiredForm = ({ isAdmin }: { isAdmin: boolean }) => {
+  const { t } = useTranslation();
   const [date, setDate] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await api.get('/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUsers(res.data);
+        if (res.data.length > 0) {
+          setSelectedUserId(res.data[0]._id);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchUsers();
+  }, [isAdmin]);
 
   const handleSubmit = async () => {
     if (!date || !start || !end) {
-      return toast.error('Please fill all fields');
+      return toast.error(t('fillAllFields'));
+    }
+
+    if (isAdmin && !selectedUserId) {
+      return toast.error('Please select a user');
     }
 
     try {
       setLoading(true);
 
-      await createShift({
-        date,
-        startTime: start,
-        endTime: end,
-      });
+      const token = localStorage.getItem('token');
 
-      // ✅ NOTIFICATION
+      await api.post(
+        '/shifts',
+        {
+          date,
+          startTime: start,
+          endTime: end,
+          ...(isAdmin && { targetUserId: selectedUserId }),
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
       addNotification(`Shift created for ${date} (${start}-${end})`);
+      toast.success(t('shiftCreated'));
 
-      toast.success('Shift created');
-
-      // reset
       setDate('');
       setStart('');
       setEnd('');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error creating shift');
+      toast.error(err.response?.data?.message || t('errorGeneric'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className='space-y-4'>
-      <input
-        type='date'
-        className='w-full p-3 rounded-xl bg-black/50'
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
+    <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
+      <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-5 space-y-4'>
+        {/* USER SELECTOR — csak adminnak */}
+        {isAdmin && (
+          <div>
+            <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+              Employee
+            </label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+            >
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.firstName} {u.lastName} ({u.email})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      <div className='flex gap-2'>
-        <input
-          type='time'
-          className='w-full p-3 rounded-xl bg-black/50'
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-        />
+        {/* DATE */}
+        <div>
+          <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+            Date
+          </label>
+          <input
+            type='date'
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+          />
+        </div>
 
-        <input
-          type='time'
-          className='w-full p-3 rounded-xl bg-black/50'
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-        />
+        {/* TIME */}
+        <div>
+          <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+            Time
+          </label>
+          <div className='flex gap-2'>
+            <input
+              type='time'
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+            />
+            <input
+              type='time'
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+            />
+          </div>
+        </div>
+
+        {/* BUTTON */}
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className='w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors'
+        >
+          {loading ? t('creating') : t('createShift')}
+        </button>
       </div>
-
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className='w-full bg-green-500 text-black p-3 rounded-xl'
-      >
-        {loading ? 'Creating...' : 'Create Shift'}
-      </button>
     </div>
   );
 };
@@ -119,45 +191,54 @@ const DesiredForm = () => {
 // 🧱 ABSENCE FORM
 // ==========================
 const AbsenceForm = () => {
+  const { t } = useTranslation();
   const [date, setDate] = useState('');
   const [reason, setReason] = useState('');
 
   const handleSubmit = () => {
     if (!date || !reason) {
-      return toast.error('Fill all fields');
+      return toast.error(t('fillAllFields'));
     }
-
-    // ✅ NOTIFICATION
     addNotification(`Absence requested for ${date}`);
-
-    toast.success('Absence request sent');
-
+    toast.success(t('absenceRequested'));
     setDate('');
     setReason('');
   };
 
   return (
-    <div className='space-y-4'>
-      <input
-        type='date'
-        className='w-full p-3 rounded-xl bg-black/50'
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
+    <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
+      <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-5 space-y-4'>
+        <div>
+          <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+            Date
+          </label>
+          <input
+            type='date'
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+          />
+        </div>
 
-      <input
-        placeholder='Reason'
-        className='w-full p-3 rounded-xl bg-black/50'
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-      />
+        <div>
+          <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+            {t('reason')}
+          </label>
+          <input
+            placeholder={t('reason')}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+          />
+        </div>
 
-      <button
-        onClick={handleSubmit}
-        className='w-full bg-green-500 text-black p-3 rounded-xl'
-      >
-        Send Request
-      </button>
+        <button
+          onClick={handleSubmit}
+          className='w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-xl text-sm transition-colors'
+        >
+          {t('submitRequest')}
+        </button>
+      </div>
     </div>
   );
 };

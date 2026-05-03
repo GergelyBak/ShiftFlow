@@ -7,8 +7,14 @@ export const createShiftController = async (req: any, res: Response) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
+    // ✅ ha admin és megad targetUserId-t → annak a usernek hozza létre
+    // ha nem ad meg → magának hozza létre
+    const targetUserId = req.body.targetUserId
+      ? req.body.targetUserId
+      : req.user.id;
+
     const shift = await createShift({
-      userId: req.user.id,
+      userId: targetUserId,
       date: req.body.date,
       startTime: req.body.startTime,
       endTime: req.body.endTime,
@@ -29,7 +35,6 @@ export const createShiftController = async (req: any, res: Response) => {
 export const getMyShifts = async (req: any, res: Response) => {
   try {
     const shifts = await getUserShifts(req.user.id);
-
     res.json(shifts);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
