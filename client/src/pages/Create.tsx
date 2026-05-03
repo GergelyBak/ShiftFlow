@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createShift } from '../api/shifts';
 import { toast } from 'react-toastify';
 import { addNotification } from '../utils/notifications';
 import { api } from '../api/axios';

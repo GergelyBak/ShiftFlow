@@ -7,12 +7,16 @@ import swapRoutes from './routes/swap.routes';
 import userRoutes from './routes/user.routes';
 
 const app = express();
-app.use('/api/users', userRoutes);
-app.use('/api/test', testRoutes);
-app.use('/api/swaps', swapRoutes);
+
+// ✅ EZEK KELL LEGELÖL LEGYENEK
 app.use(cors());
 app.use(express.json());
-app.use('/api/shifts', shiftRoutes);
+
+// ROUTES
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/shifts', shiftRoutes);
+app.use('/api/swaps', swapRoutes);
+app.use('/api/test', testRoutes);
 
 export default app;
