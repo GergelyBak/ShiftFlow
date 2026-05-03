@@ -1,81 +1,124 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
+
 const Login = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/dashboard');
+    }
+  }, []);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      return setError(t('fillAllFields'));
+    }
+
     try {
+      setLoading(true);
       setError('');
 
-      const res = await api.post('/auth/login', {
-        email,
-        password,
-      });
+      const res = await api.post('/auth/login', { email, password });
 
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
 
-      toast.success('Logged in successfully');
+      toast.success(t('loggedIn'));
 
       navigate('/dashboard');
     } catch (err: any) {
-      console.log(err.response?.data);
-      setError(err.response?.data?.message || 'Login failed');
-      toast.error(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || t('errorGeneric'));
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleLogin();
+  };
+
   return (
-    <div className='min-h-screen bg-gradient-to-b from-green-900 via-black to-black flex items-center justify-center px-4'>
-      {/* CARD */}
-      <div className='w-full max-w-sm bg-black/80 backdrop-blur-lg rounded-3xl p-6 shadow-xl text-white'>
-        <h1 className='text-2xl font-semibold mb-6 text-center'>
-          Welcome back
-        </h1>
+    <div className='min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center px-4 transition-colors duration-300'>
+      <div className='w-full max-w-sm'>
+        {/* LOGO / TITLE */}
+        <div className='text-center mb-8'>
+          <h1 className='text-3xl font-bold text-slate-900 dark:text-white'>
+            ShiftFlow
+          </h1>
+          <p className='text-slate-500 dark:text-slate-400 text-sm mt-1'>
+            {t('welcomeBack')}
+          </p>
+        </div>
 
-        {error && (
-          <p className='text-red-400 text-sm mb-4 text-center'>{error}</p>
-        )}
+        {/* CARD */}
+        <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
+          <div className='bg-white dark:bg-slate-900 rounded-2xl px-5 py-6 space-y-3'>
+            {error && (
+              <div className='bg-red-50 dark:bg-red-950/30 text-red-500 text-sm px-3 py-2 rounded-xl'>
+                {error}
+              </div>
+            )}
 
-        {/* EMAIL */}
-        <input
-          className='w-full mb-3 p-3 rounded-xl bg-white/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-green-500'
-          placeholder='Email'
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+            {/* EMAIL */}
+            <div>
+              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+                {t('email')}
+              </label>
+              <input
+                type='email'
+                placeholder={t('email')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
 
-        {/* PASSWORD */}
-        <input
-          className='w-full mb-4 p-3 rounded-xl bg-white/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-green-500'
-          type='password'
-          placeholder='Password'
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+            {/* PASSWORD */}
+            <div>
+              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+                {t('password')}
+              </label>
+              <input
+                type='password'
+                placeholder={t('password')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
 
-        {/* BUTTON */}
-        <button
-          onClick={handleLogin}
-          className='w-full bg-green-500 hover:bg-green-600 transition p-3 rounded-xl font-medium'
-        >
-          Login
-        </button>
+            {/* BUTTON */}
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className='w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2'
+            >
+              {loading ? t('loading') : t('login')}
+            </button>
+          </div>
+        </div>
 
-        {/* LINK */}
-        <p className='mt-5 text-sm text-center text-gray-400'>
-          No account?{' '}
+        {/* REGISTER LINK */}
+        <p className='text-center text-sm text-slate-500 dark:text-slate-400 mt-4'>
+          {t('noAccount')}{' '}
           <span
-            className='text-green-400 cursor-pointer'
             onClick={() => navigate('/register')}
+            className='text-green-500 font-medium cursor-pointer'
           >
-            Register
+            {t('register')}
           </span>
         </p>
       </div>

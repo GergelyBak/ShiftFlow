@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -40,7 +41,11 @@ const Register = () => {
 
       await api.post('/auth/register', form);
 
-      navigate('/');
+      toast.success(t('registerSuccess'));
+
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.message || t('errorGeneric'));
     } finally {
@@ -49,106 +54,106 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center px-4 transition-colors duration-300">
-      <div className="w-full max-w-sm">
-
+    <div className='min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center px-4 transition-colors duration-300'>
+      <div className='w-full max-w-sm'>
         {/* LOGO / TITLE */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">ShiftFlow</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t('createAccount')}</p>
+        <div className='text-center mb-8'>
+          <h1 className='text-3xl font-bold text-slate-900 dark:text-white'>
+            ShiftFlow
+          </h1>
+          <p className='text-slate-500 dark:text-slate-400 text-sm mt-1'>
+            {t('createAccount')}
+          </p>
         </div>
 
         {/* CARD */}
-        <div className="bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl px-5 py-6 space-y-3">
-
+        <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
+          <div className='bg-white dark:bg-slate-900 rounded-2xl px-5 py-6 space-y-3'>
             {error && (
-              <div className="bg-red-50 dark:bg-red-950/30 text-red-500 text-sm px-3 py-2 rounded-xl">
+              <div className='bg-red-50 dark:bg-red-950/30 text-red-500 text-sm px-3 py-2 rounded-xl'>
                 {error}
               </div>
             )}
 
             {/* FIRST NAME */}
             <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('firstName')}
               </label>
               <input
-                name="firstName"
+                name='firstName'
                 placeholder={t('firstName')}
                 value={form.firstName}
                 onChange={handleChange}
-                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+                className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
 
             {/* LAST NAME */}
             <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('lastName')}
               </label>
               <input
-                name="lastName"
+                name='lastName'
                 placeholder={t('lastName')}
                 value={form.lastName}
                 onChange={handleChange}
-                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+                className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
 
             {/* EMAIL */}
             <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('email')}
               </label>
               <input
-                name="email"
+                name='email'
                 placeholder={t('email')}
                 value={form.email}
                 onChange={handleChange}
-                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+                className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
 
             {/* PASSWORD */}
             <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('password')}
               </label>
               <input
-                name="password"
-                type="password"
+                name='password'
+                type='password'
                 placeholder={t('password')}
                 value={form.password}
                 onChange={handleChange}
-                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+                className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
-              <p className="text-xs text-slate-400 mt-1">{t('passwordHint')}</p>
+              <p className='text-xs text-slate-400 mt-1'>{t('passwordHint')}</p>
             </div>
 
             {/* BUTTON */}
             <button
               onClick={handleRegister}
               disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2"
+              className='w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2'
             >
               {loading ? t('loading') : t('register')}
             </button>
-
           </div>
         </div>
 
         {/* LOGIN LINK */}
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-4">
+        <p className='text-center text-sm text-slate-500 dark:text-slate-400 mt-4'>
           {t('alreadyHaveAccount')}{' '}
           <span
             onClick={() => navigate('/')}
-            className="text-green-500 font-medium cursor-pointer"
+            className='text-green-500 font-medium cursor-pointer'
           >
             {t('login')}
           </span>
         </p>
-
       </div>
     </div>
   );

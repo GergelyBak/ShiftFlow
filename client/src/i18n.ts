@@ -5,6 +5,7 @@ i18n.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
+        registerSuccess: 'Account created! Redirecting to login...',
         greeting: 'Hey {{name}}!',
         nextShift: 'Next Shift',
         myShifts: 'My Shifts',
@@ -57,11 +58,16 @@ i18n.use(initReactI18next).init({
         loading: 'Loading...',
         alreadyHaveAccount: 'Already have an account?',
         login: 'Login',
+        welcomeBack: 'Welcome back',
+        noAccount: "Don't have an account?",
       },
     },
     de: {
       translation: {
+        registerSuccess: 'Konto erstellt! Weiterleitung zur Anmeldung...',
         greeting: 'Hallo {{name}}!',
+        welcomeBack: 'Willkommen zurück',
+        noAccount: 'Noch kein Konto?',
         nextShift: 'Nächste Schicht',
         myShifts: 'Meine Schichten',
         noShifts: 'Noch keine Schichten',
