@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { api } from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [form, setForm] = useState({
     firstName: '',
@@ -13,75 +15,140 @@ const Register = () => {
   });
 
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleRegister = async () => {
+    if (!form.firstName || !form.lastName || !form.email || !form.password) {
+      return setError(t('fillAllFields'));
+    }
+
+    if (form.password.length < 8) {
+      return setError(t('passwordTooShort'));
+    }
+
+    if (!/[!@#$%^&*]/.test(form.password)) {
+      return setError(t('passwordSpecial'));
+    }
+
     try {
+      setLoading(true);
       setError('');
 
       await api.post('/auth/register', form);
 
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error');
+      setError(err.response?.data?.message || t('errorGeneric'));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-green-900 via-black to-black flex items-center justify-center px-4'>
-      <div className='w-full max-w-sm bg-black/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl text-white'>
-        <h1 className='text-2xl mb-6 text-center'>Create account</h1>
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center px-4 transition-colors duration-300">
+      <div className="w-full max-w-sm">
 
-        {error && <p className='text-red-400 text-sm mb-3'>{error}</p>}
+        {/* LOGO / TITLE */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">ShiftFlow</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t('createAccount')}</p>
+        </div>
 
-        <input
-          name='firstName'
-          placeholder='First name'
-          onChange={handleChange}
-          className='w-full mb-3 p-3 rounded-xl bg-white/10'
-        />
+        {/* CARD */}
+        <div className="bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl px-5 py-6 space-y-3">
 
-        <input
-          name='lastName'
-          placeholder='Last name'
-          onChange={handleChange}
-          className='w-full mb-3 p-3 rounded-xl bg-white/10'
-        />
+            {error && (
+              <div className="bg-red-50 dark:bg-red-950/30 text-red-500 text-sm px-3 py-2 rounded-xl">
+                {error}
+              </div>
+            )}
 
-        <input
-          name='email'
-          placeholder='Email'
-          onChange={handleChange}
-          className='w-full mb-3 p-3 rounded-xl bg-white/10'
-        />
+            {/* FIRST NAME */}
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                {t('firstName')}
+              </label>
+              <input
+                name="firstName"
+                placeholder={t('firstName')}
+                value={form.firstName}
+                onChange={handleChange}
+                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
 
-        <input
-          name='password'
-          type='password'
-          placeholder='Password'
-          onChange={handleChange}
-          className='w-full mb-4 p-3 rounded-xl bg-white/10'
-        />
+            {/* LAST NAME */}
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                {t('lastName')}
+              </label>
+              <input
+                name="lastName"
+                placeholder={t('lastName')}
+                value={form.lastName}
+                onChange={handleChange}
+                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
 
-        <button
-          onClick={handleRegister}
-          className='w-full bg-green-500 p-3 rounded-xl'
-        >
-          Register
-        </button>
+            {/* EMAIL */}
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                {t('email')}
+              </label>
+              <input
+                name="email"
+                placeholder={t('email')}
+                value={form.email}
+                onChange={handleChange}
+                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
 
-        <p className='mt-4 text-sm text-center'>
-          Already have an account?{' '}
+            {/* PASSWORD */}
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                {t('password')}
+              </label>
+              <input
+                name="password"
+                type="password"
+                placeholder={t('password')}
+                value={form.password}
+                onChange={handleChange}
+                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <p className="text-xs text-slate-400 mt-1">{t('passwordHint')}</p>
+            </div>
+
+            {/* BUTTON */}
+            <button
+              onClick={handleRegister}
+              disabled={loading}
+              className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2"
+            >
+              {loading ? t('loading') : t('register')}
+            </button>
+
+          </div>
+        </div>
+
+        {/* LOGIN LINK */}
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-4">
+          {t('alreadyHaveAccount')}{' '}
           <span
-            className='text-green-400 cursor-pointer'
             onClick={() => navigate('/')}
+            className="text-green-500 font-medium cursor-pointer"
           >
-            Login
+            {t('login')}
           </span>
         </p>
+
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Moon, Globe, LogOut } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { setTheme } from '../utils/theme';
+import { useTranslation } from 'react-i18next';
 
 const Toggle = ({
   checked,
@@ -27,30 +28,38 @@ const Toggle = ({
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem('theme') !== 'light',
   );
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(
+    localStorage.getItem('lang') || 'en',
+  );
 
-const toggleTheme = () => {
-  const newMode = darkMode ? 'light' : 'dark';
-  console.log('toggleTheme called, newMode:', newMode);
-  setDarkMode(!darkMode);
-  setTheme(newMode);
-};
+  const toggleTheme = () => {
+    const newMode = darkMode ? 'light' : 'dark';
+    setDarkMode(!darkMode);
+    setTheme(newMode);
+  };
 
-const handleLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  toast.success('Logged out successfully');
-  navigate('/');
-};
+  const changeLanguage = (lang: string) => {
+    setLanguage(lang);
+    i18n.changeLanguage(lang);
+    localStorage.setItem('lang', lang);
+  };
 
-return (
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    toast.success(t('loggedOut'));
+    navigate('/');
+  };
+
+  return (
     <div className='pb-24'>
-      <h1 className='text-2xl font-semibold mb-5'>Settings</h1>
+      <h1 className='text-2xl font-semibold mb-5'>{t('settings')}</h1>
 
       <div className='space-y-3'>
         {/* PREFERENCES */}
@@ -60,7 +69,7 @@ return (
             <div className='flex items-center gap-3'>
               <Bell size={19} className='text-slate-500 dark:text-slate-400' />
               <span className='text-sm font-medium text-slate-800 dark:text-white'>
-                Notifications
+                {t('notifications')}
               </span>
             </div>
             <Toggle
@@ -74,7 +83,7 @@ return (
             <div className='flex items-center gap-3'>
               <Moon size={19} className='text-slate-500 dark:text-slate-400' />
               <span className='text-sm font-medium text-slate-800 dark:text-white'>
-                Dark Mode
+                {t('darkMode')}
               </span>
             </div>
             <Toggle checked={darkMode} onChange={toggleTheme} />
@@ -85,12 +94,12 @@ return (
             <div className='flex items-center gap-3'>
               <Globe size={19} className='text-slate-500 dark:text-slate-400' />
               <span className='text-sm font-medium text-slate-800 dark:text-white'>
-                Language
+                {t('language')}
               </span>
             </div>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => changeLanguage(e.target.value)}
               className='text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg px-2 py-1 border-none outline-none'
             >
               <option value='en'>English</option>
@@ -106,7 +115,7 @@ return (
             className='bg-white dark:bg-slate-900 w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-red-500 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors'
           >
             <LogOut size={18} />
-            Logout
+            {t('logout')}
           </button>
         </div>
       </div>
