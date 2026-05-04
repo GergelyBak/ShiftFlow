@@ -271,13 +271,13 @@ const Dashboard = () => {
           {t('myShifts')}
         </p>
 
-        {shifts.length === 0 ? (
+        {futureShifts.length === 0 ? (
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-6 text-center text-slate-400 text-sm'>
             {t('noShifts')}
           </div>
         ) : (
           <div className='space-y-2'>
-            {shifts.map((shift) => (
+            {futureShifts.map((shift) => (
               <div
                 key={shift._id}
                 className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 flex justify-between items-center'

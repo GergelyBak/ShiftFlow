@@ -6,15 +6,12 @@ export const createShift = async (data: {
   endTime: string;
 }) => {
   const token = localStorage.getItem('token');
-
   const res = await api.post('/shifts', data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
-
   return res.data;
 };
+
 export const deleteShift = async (id: string) => {
   const token = localStorage.getItem('token');
   const res = await api.delete(`/shifts/${id}`, {

@@ -8,8 +8,6 @@ export const createShiftController = async (req: any, res: Response) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    // ✅ ha admin és megad targetUserId-t → annak a usernek hozza létre
-    // ha nem ad meg → magának hozza létre
     const targetUserId = req.body.targetUserId
       ? req.body.targetUserId
       : req.user.id;
@@ -42,7 +40,6 @@ export const getMyShifts = async (req: any, res: Response) => {
   }
 };
 
-// shift.controller.ts
 export const deleteShiftController = async (req: any, res: Response) => {
   try {
     const shift = await Shift.findById(req.params.id);
@@ -51,7 +48,6 @@ export const deleteShiftController = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Shift not found' });
     }
 
-    // csak admin vagy a saját shiftjét törölheti
     if (req.user.role !== 'admin' && shift.userId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Forbidden' });
     }
@@ -59,6 +55,28 @@ export const deleteShiftController = async (req: any, res: Response) => {
     await Shift.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Shift deleted' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateShiftController = async (req: any, res: Response) => {
+  try {
+    const shift = await Shift.findById(req.params.id);
+
+    if (!shift) {
+      return res.status(404).json({ message: 'Shift not found' });
+    }
+
+    if (req.user.role !== 'admin' && shift.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    shift.startTime = req.body.startTime || shift.startTime;
+    shift.endTime = req.body.endTime || shift.endTime;
+    await shift.save();
+
+    res.json(shift);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
