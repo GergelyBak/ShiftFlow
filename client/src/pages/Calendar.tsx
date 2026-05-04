@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/axios';
-import { ChevronLeft, ChevronRight, CalendarDays, X } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  X,
+  Pencil,
+  Trash2,
+  Check,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 
 const Calendar = () => {
   const [shifts, setShifts] = useState<any[]>([]);
@@ -10,14 +19,15 @@ const Calendar = () => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
 
+  const fetchShifts = async () => {
+    const token = localStorage.getItem('token');
+    const res = await api.get('/shifts/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setShifts(res.data);
+  };
+
   useEffect(() => {
-    const fetchShifts = async () => {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/shifts/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setShifts(res.data);
-    };
     fetchShifts();
   }, []);
 
@@ -59,7 +69,6 @@ const Calendar = () => {
 
   return (
     <div className='pb-24'>
-      {/* HEADER */}
       <div className='flex items-center justify-between mb-5'>
         <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex'>
           <button
@@ -105,9 +114,19 @@ const Calendar = () => {
       </div>
 
       {view === 'week' ? (
-        <WeekView shifts={shifts} startOfWeek={startOfWeek} locale={locale} />
+        <WeekView
+          shifts={shifts}
+          setShifts={setShifts}
+          startOfWeek={startOfWeek}
+          locale={locale}
+        />
       ) : (
-        <MonthView shifts={shifts} currentDate={currentDate} locale={locale} />
+        <MonthView
+          shifts={shifts}
+          setShifts={setShifts}
+          currentDate={currentDate}
+          locale={locale}
+        />
       )}
     </div>
   );
@@ -116,9 +135,182 @@ const Calendar = () => {
 export default Calendar;
 
 // =======================
+// 🔧 SHIFT MODAL (shared)
+// =======================
+const ShiftModal = ({
+  selectedDay,
+  onClose,
+  shifts,
+  setShifts,
+  locale,
+}: any) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStart, setEditStart] = useState('');
+  const [editEnd, setEditEnd] = useState('');
+
+  const handleDelete = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await api.delete(`/shifts/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setShifts((prev: any[]) => prev.filter((s) => s._id !== id));
+      toast.success('Shift deleted');
+    } catch {
+      toast.error('Could not delete shift');
+    }
+  };
+
+  const startEdit = (shift: any) => {
+    setEditingId(shift._id);
+    setEditStart(shift.startTime);
+    setEditEnd(shift.endTime);
+  };
+
+  const handleSave = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.patch(
+        `/shifts/${id}`,
+        { startTime: editStart, endTime: editEnd },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setShifts((prev: any[]) =>
+        prev.map((s) =>
+          s._id === id ? { ...s, startTime: editStart, endTime: editEnd } : s,
+        ),
+      );
+      setEditingId(null);
+      toast.success('Shift updated');
+    } catch {
+      toast.error('Could not update shift');
+    }
+  };
+
+  const dayShifts = shifts.filter((s: any) => {
+    const d = new Date(s.date);
+    return d.toDateString() === selectedDay.toDateString();
+  });
+
+  return (
+    <div
+      className='fixed inset-0 bg-black/40 z-50 flex items-end justify-center'
+      onClick={onClose}
+    >
+      <div
+        className='bg-white dark:bg-slate-900 w-full max-w-md rounded-t-3xl p-6 pb-10'
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* HEADER */}
+        <div className='flex items-center justify-between mb-4'>
+          <div>
+            <p className='text-xs text-slate-400 uppercase tracking-wide font-medium'>
+              {selectedDay.toLocaleDateString(locale, { weekday: 'long' })}
+            </p>
+            <p className='text-xl font-bold text-slate-900 dark:text-white'>
+              {selectedDay.toLocaleDateString(locale, {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className='bg-slate-100 dark:bg-slate-800 p-2 rounded-full'
+          >
+            <X size={18} className='text-slate-500' />
+          </button>
+        </div>
+
+        {/* CONTENT */}
+        {dayShifts.length === 0 ? (
+          <div className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 text-center text-slate-400 text-sm'>
+            No shift scheduled
+          </div>
+        ) : (
+          <div className='space-y-2'>
+            {dayShifts.map((shift: any) => (
+              <div
+                key={shift._id}
+                className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-4'
+              >
+                {editingId === shift._id ? (
+                  // EDIT MODE
+                  <div className='space-y-3'>
+                    <div className='flex gap-2'>
+                      <input
+                        type='time'
+                        value={editStart}
+                        onChange={(e) => setEditStart(e.target.value)}
+                        className='w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                      />
+                      <input
+                        type='time'
+                        value={editEnd}
+                        onChange={(e) => setEditEnd(e.target.value)}
+                        className='w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                      />
+                    </div>
+                    <div className='flex gap-2'>
+                      <button
+                        onClick={() => handleSave(shift._id)}
+                        className='flex-1 bg-green-500 text-white py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-1'
+                      >
+                        <Check size={14} />
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className='flex-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 rounded-xl text-sm font-medium'
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // VIEW MODE
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-3'>
+                      <CalendarDays size={20} className='text-green-500' />
+                      <div>
+                        <p className='text-lg font-bold text-slate-900 dark:text-white tracking-tight'>
+                          {shift.startTime} – {shift.endTime}
+                        </p>
+                        <p className='text-xs text-slate-400 mt-0.5'>Shift</p>
+                      </div>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <button
+                        onClick={() => startEdit(shift)}
+                        className='bg-white dark:bg-slate-900 p-2 rounded-xl text-slate-400 hover:text-green-500 transition-colors'
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(shift._id)}
+                        className='bg-white dark:bg-slate-900 p-2 rounded-xl text-slate-400 hover:text-red-400 transition-colors'
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =======================
 // 📅 WEEK VIEW
 // =======================
-const WeekView = ({ shifts, startOfWeek, locale }: any) => {
+const WeekView = ({ shifts, setShifts, startOfWeek, locale }: any) => {
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -136,87 +328,97 @@ const WeekView = ({ shifts, startOfWeek, locale }: any) => {
   };
 
   return (
-    <div className='space-y-2'>
-      {weekDays.map((day, i) => {
-        const dayShifts = getShiftsForDay(day);
-        const isToday = day.toDateString() === today.toDateString();
-        const isPast = day < today;
+    <>
+      <div className='space-y-2'>
+        {weekDays.map((day, i) => {
+          const dayShifts = getShiftsForDay(day);
+          const isToday = day.toDateString() === today.toDateString();
+          const isPast = day < today;
 
-        const dayLabel = day.toLocaleDateString(locale, {
-          weekday: 'long',
-          day: '2-digit',
-          month: '2-digit',
-        });
+          const dayLabel = day.toLocaleDateString(locale, {
+            weekday: 'long',
+            day: '2-digit',
+            month: '2-digit',
+          });
 
-        return (
-          <div
-            key={i}
-            className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl overflow-hidden'
-          >
+          return (
             <div
-              className={`px-4 py-2.5 ${isToday ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
+              key={i}
+              className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl overflow-hidden cursor-pointer'
+              onClick={() => setSelectedDay(day)}
             >
-              <span
-                className={`font-semibold text-sm ${
-                  isToday
-                    ? 'text-green-600 dark:text-green-400'
-                    : isPast
-                      ? 'text-slate-400 dark:text-slate-500'
-                      : 'text-slate-700 dark:text-slate-200'
-                }`}
+              <div
+                className={`px-4 py-2.5 ${isToday ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
               >
-                {dayLabel}
-                {isToday && (
-                  <span className='ml-2 text-xs font-normal opacity-70'>
-                    Today
-                  </span>
-                )}
-              </span>
-            </div>
+                <span
+                  className={`font-semibold text-sm ${
+                    isToday
+                      ? 'text-green-600 dark:text-green-400'
+                      : isPast
+                        ? 'text-slate-400 dark:text-slate-500'
+                        : 'text-slate-700 dark:text-slate-200'
+                  }`}
+                >
+                  {dayLabel}
+                  {isToday && (
+                    <span className='ml-2 text-xs font-normal opacity-70'>
+                      Today
+                    </span>
+                  )}
+                </span>
+              </div>
 
-            {dayShifts.length > 0 && (
-              <div className='px-3 pb-3 space-y-2'>
-                {dayShifts.map((shift: any) => (
-                  <div
-                    key={shift._id}
-                    className={`rounded-xl p-3 flex items-center gap-3 ${
-                      isPast
-                        ? 'bg-slate-100 dark:bg-slate-700/50'
-                        : 'bg-white dark:bg-slate-900'
-                    }`}
-                  >
-                    <CalendarDays
-                      size={18}
-                      className={isPast ? 'text-slate-400' : 'text-green-500'}
-                    />
-                    <p
-                      className={`text-base font-bold tracking-tight ${
+              {dayShifts.length > 0 && (
+                <div className='px-3 pb-3 space-y-2'>
+                  {dayShifts.map((shift: any) => (
+                    <div
+                      key={shift._id}
+                      className={`rounded-xl p-3 flex items-center gap-3 ${
                         isPast
-                          ? 'text-slate-400 dark:text-slate-500'
-                          : 'text-slate-800 dark:text-white'
+                          ? 'bg-slate-100 dark:bg-slate-700/50'
+                          : 'bg-white dark:bg-slate-900'
                       }`}
                     >
-                      {shift.startTime} - {shift.endTime}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+                      <CalendarDays
+                        size={18}
+                        className={isPast ? 'text-slate-400' : 'text-green-500'}
+                      />
+                      <p
+                        className={`text-base font-bold tracking-tight ${
+                          isPast
+                            ? 'text-slate-400 dark:text-slate-500'
+                            : 'text-slate-800 dark:text-white'
+                        }`}
+                      >
+                        {shift.startTime} - {shift.endTime}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {selectedDay && (
+        <ShiftModal
+          selectedDay={selectedDay}
+          onClose={() => setSelectedDay(null)}
+          shifts={shifts}
+          setShifts={setShifts}
+          locale={locale}
+        />
+      )}
+    </>
   );
 };
 
 // =======================
 // 📅 MONTH VIEW
 // =======================
-const MonthView = ({ shifts, currentDate, locale }: any) => {
-  const [selectedDay, setSelectedDay] = useState<{
-    date: Date;
-    shifts: any[];
-  } | null>(null);
+const MonthView = ({ shifts, setShifts, currentDate, locale }: any) => {
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -244,12 +446,6 @@ const MonthView = ({ shifts, currentDate, locale }: any) => {
     });
   };
 
-  const handleDayClick = (day: number) => {
-    const date = new Date(year, month, day);
-    const dayShifts = getShiftsForDay(day);
-    setSelectedDay({ date, shifts: dayShifts });
-  };
-
   const weekDayLabels =
     locale === 'de-DE'
       ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
@@ -257,7 +453,6 @@ const MonthView = ({ shifts, currentDate, locale }: any) => {
 
   return (
     <>
-      {/* WEEK DAYS HEADER */}
       <div className='grid grid-cols-7 mb-2'>
         {weekDayLabels.map((d) => (
           <div
@@ -269,7 +464,6 @@ const MonthView = ({ shifts, currentDate, locale }: any) => {
         ))}
       </div>
 
-      {/* GRID */}
       <div className='grid grid-cols-7 gap-1.5'>
         {days.map((day, index) => {
           if (!day) return <div key={index} />;
@@ -284,7 +478,7 @@ const MonthView = ({ shifts, currentDate, locale }: any) => {
           return (
             <div
               key={index}
-              onClick={() => handleDayClick(day)}
+              onClick={() => setSelectedDay(cellDate)}
               className={`rounded-xl h-14 p-1.5 flex flex-col justify-between cursor-pointer active:scale-95 transition-transform ${
                 isToday
                   ? 'bg-green-500'
@@ -321,65 +515,14 @@ const MonthView = ({ shifts, currentDate, locale }: any) => {
         })}
       </div>
 
-      {/* MODAL */}
       {selectedDay && (
-        <div
-          className='fixed inset-0 bg-black/40 z-50 flex items-end justify-center'
-          onClick={() => setSelectedDay(null)}
-        >
-          <div
-            className='bg-white dark:bg-slate-900 w-full max-w-md rounded-t-3xl p-6 pb-10'
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* MODAL HEADER */}
-            <div className='flex items-center justify-between mb-4'>
-              <div>
-                <p className='text-xs text-slate-400 uppercase tracking-wide font-medium'>
-                  {selectedDay.date.toLocaleDateString(locale, {
-                    weekday: 'long',
-                  })}
-                </p>
-                <p className='text-xl font-bold text-slate-900 dark:text-white'>
-                  {selectedDay.date.toLocaleDateString(locale, {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedDay(null)}
-                className='bg-slate-100 dark:bg-slate-800 p-2 rounded-full'
-              >
-                <X size={18} className='text-slate-500' />
-              </button>
-            </div>
-
-            {/* MODAL CONTENT */}
-            {selectedDay.shifts.length === 0 ? (
-              <div className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 text-center text-slate-400 text-sm'>
-                No shift scheduled
-              </div>
-            ) : (
-              <div className='space-y-2'>
-                {selectedDay.shifts.map((shift: any) => (
-                  <div
-                    key={shift._id}
-                    className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 flex items-center gap-3'
-                  >
-                    <CalendarDays size={20} className='text-green-500' />
-                    <div>
-                      <p className='text-lg font-bold text-slate-900 dark:text-white tracking-tight'>
-                        {shift.startTime} – {shift.endTime}
-                      </p>
-                      <p className='text-xs text-slate-400 mt-0.5'>Shift</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <ShiftModal
+          selectedDay={selectedDay}
+          onClose={() => setSelectedDay(null)}
+          shifts={shifts}
+          setShifts={setShifts}
+          locale={locale}
+        />
       )}
     </>
   );

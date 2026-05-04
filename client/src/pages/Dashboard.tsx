@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/axios';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, Clock, Timer } from 'lucide-react';
+import { CalendarDays, Clock, Timer, Trash2 } from 'lucide-react';
+import { deleteShift } from '../api/shifts';
+import { toast } from 'react-toastify';
 
 const Dashboard = () => {
   const [shifts, setShifts] = useState<any[]>([]);
@@ -29,12 +31,21 @@ const Dashboard = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 5 napos preview
   const next5Days = Array.from({ length: 5 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     return d;
   });
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteShift(id);
+      setShifts((prev) => prev.filter((s) => s._id !== id));
+      toast.success('Shift deleted');
+    } catch (err) {
+      toast.error('Could not delete shift');
+    }
+  };
 
   const getShiftForDay = (date: Date) => {
     return shifts.find((s) => {
@@ -43,11 +54,19 @@ const Dashboard = () => {
     });
   };
 
-  // Munkaidő számítás
   const calcHours = (shift: any) => {
     const [sh, sm] = shift.startTime.split(':').map(Number);
     const [eh, em] = shift.endTime.split(':').map(Number);
-    return (eh * 60 + em - (sh * 60 + sm)) / 60;
+    const totalMinutes = eh * 60 + em - (sh * 60 + sm);
+
+    let breakMinutes = 0;
+    if (totalMinutes >= 8 * 60) {
+      breakMinutes = 30;
+    } else if (totalMinutes >= 6 * 60) {
+      breakMinutes = 15;
+    }
+
+    return (totalMinutes - breakMinutes) / 60;
   };
 
   const now = new Date();
@@ -91,7 +110,6 @@ const Dashboard = () => {
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
   };
 
-  // Last + Next shift
   const pastShifts = shifts.filter((s) => new Date(s.date) < today);
   const futureShifts = shifts.filter((s) => new Date(s.date) >= today);
   const lastShift = pastShifts[pastShifts.length - 1];
@@ -119,7 +137,6 @@ const Dashboard = () => {
           {next5Days.map((day, i) => {
             const shift = getShiftForDay(day);
             const isToday = i === 0;
-
             return (
               <div
                 key={i}
@@ -150,7 +167,6 @@ const Dashboard = () => {
 
       {/* LAST + NEXT SHIFT */}
       <div className='grid grid-cols-2 gap-3'>
-        {/* LAST SHIFT */}
         <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
           <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
             Last Shift
@@ -179,7 +195,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* NEXT SHIFT */}
         <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
           <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
             Next Shift
@@ -215,7 +230,6 @@ const Dashboard = () => {
           Working Hours
         </p>
         <div className='grid grid-cols-3 gap-2'>
-          {/* THIS WEEK */}
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             <p className='text-xs text-slate-400 mb-1'>This week</p>
             <p className='text-lg font-bold text-slate-900 dark:text-white'>
@@ -227,7 +241,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* THIS MONTH */}
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             <p className='text-xs text-slate-400 mb-1'>{currentMonthName}</p>
             <p className='text-lg font-bold text-slate-900 dark:text-white'>
@@ -239,7 +252,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* LAST MONTH */}
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             <p className='text-xs text-slate-400 mb-1'>{lastMonthName}</p>
             <p className='text-lg font-bold text-slate-900 dark:text-white'>
@@ -282,9 +294,18 @@ const Dashboard = () => {
                     {shift.startTime} – {shift.endTime}
                   </p>
                 </div>
-                <p className='text-sm font-medium text-slate-400'>
-                  {formatHours(calcHours(shift))}h
-                </p>
+
+                <div className='flex items-center gap-3'>
+                  <p className='text-sm font-medium text-slate-400'>
+                    {formatHours(calcHours(shift))}h
+                  </p>
+                  <button
+                    onClick={() => handleDelete(shift._id)}
+                    className='text-slate-300 hover:text-red-400 transition-colors p-1'
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

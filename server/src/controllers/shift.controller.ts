@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { createShift, getUserShifts } from '../services/shift.services';
+import Shift from '../models/Shift';
 
 export const createShiftController = async (req: any, res: Response) => {
   try {
@@ -36,6 +37,28 @@ export const getMyShifts = async (req: any, res: Response) => {
   try {
     const shifts = await getUserShifts(req.user.id);
     res.json(shifts);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// shift.controller.ts
+export const deleteShiftController = async (req: any, res: Response) => {
+  try {
+    const shift = await Shift.findById(req.params.id);
+
+    if (!shift) {
+      return res.status(404).json({ message: 'Shift not found' });
+    }
+
+    // csak admin vagy a saját shiftjét törölheti
+    if (req.user.role !== 'admin' && shift.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    await Shift.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Shift deleted' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
