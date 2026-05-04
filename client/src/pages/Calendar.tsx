@@ -170,7 +170,7 @@ const ShiftModal = ({
   const handleSave = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await api.patch(
+      await api.patch(
         `/shifts/${id}`,
         { startTime: editStart, endTime: editEnd },
         { headers: { Authorization: `Bearer ${token}` } },
