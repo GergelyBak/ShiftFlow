@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 
 const Dashboard = () => {
   const [shifts, setShifts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
 
@@ -17,9 +18,16 @@ const Dashboard = () => {
         const res = await api.get('/shifts/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setShifts(res.data);
+        // ✅ dátum szerint rendezés
+        const sorted = res.data.sort(
+          (a: any, b: any) =>
+            new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
+        setShifts(sorted);
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchShifts();
@@ -42,7 +50,7 @@ const Dashboard = () => {
       await deleteShift(id);
       setShifts((prev) => prev.filter((s) => s._id !== id));
       toast.success('Shift deleted');
-    } catch (err) {
+    } catch {
       toast.error('Could not delete shift');
     }
   };
@@ -58,15 +66,16 @@ const Dashboard = () => {
     const [sh, sm] = shift.startTime.split(':').map(Number);
     const [eh, em] = shift.endTime.split(':').map(Number);
     const totalMinutes = eh * 60 + em - (sh * 60 + sm);
-
     let breakMinutes = 0;
-    if (totalMinutes >= 8 * 60) {
-      breakMinutes = 30;
-    } else if (totalMinutes >= 6 * 60) {
-      breakMinutes = 15;
-    }
-
+    if (totalMinutes >= 8 * 60) breakMinutes = 30;
+    else if (totalMinutes >= 6 * 60) breakMinutes = 15;
     return (totalMinutes - breakMinutes) / 60;
+  };
+
+  const formatHours = (h: number) => {
+    const hours = Math.floor(h);
+    const mins = Math.round((h - hours) * 60);
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
   };
 
   const now = new Date();
@@ -104,22 +113,40 @@ const Dashboard = () => {
     })
     .reduce((acc, s) => acc + calcHours(s), 0);
 
-  const formatHours = (h: number) => {
-    const hours = Math.floor(h);
-    const mins = Math.round((h - hours) * 60);
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-  };
+  const pastShifts = shifts
+    .filter((s) => {
+      const d = new Date(s.date);
+      d.setHours(0, 0, 0, 0);
+      return d < today;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const pastShifts = shifts.filter((s) => new Date(s.date) < today);
-  const futureShifts = shifts.filter((s) => new Date(s.date) >= today);
-  const lastShift = pastShifts[pastShifts.length - 1];
-  const nextShift = futureShifts[0];
+  const futureShifts = shifts
+    .filter((s) => {
+      const d = new Date(s.date);
+      d.setHours(0, 0, 0, 0);
+      return d >= today;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const lastShift = pastShifts[pastShifts.length - 1]; // ✅ legutóbbi
+  const nextShift = futureShifts[0]; // ✅ legközelebbi
 
   const currentMonthName = now.toLocaleString(locale, { month: 'long' });
   const lastMonthName = new Date(lastMonthYear, lastMonth).toLocaleString(
     locale,
     { month: 'long' },
   );
+
+  // LOADING
+  if (loading) {
+    return (
+      <div className='min-h-screen flex flex-col items-center justify-center gap-4'>
+        <div className='w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-green-500 animate-spin' />
+        <p className='text-sm text-slate-400 dark:text-slate-500'>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className='pb-28 space-y-3'>
@@ -294,7 +321,6 @@ const Dashboard = () => {
                     {shift.startTime} – {shift.endTime}
                   </p>
                 </div>
-
                 <div className='flex items-center gap-3'>
                   <p className='text-sm font-medium text-slate-400'>
                     {formatHours(calcHours(shift))}h
