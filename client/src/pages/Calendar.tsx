@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
+import { addNotification } from '../utils/notifications';
 
 const Calendar = () => {
   const [shifts, setShifts] = useState<any[]>([]);
@@ -155,6 +156,7 @@ const ShiftModal = ({
         headers: { Authorization: `Bearer ${token}` },
       });
       setShifts((prev: any[]) => prev.filter((s) => s._id !== id));
+      addNotification(`Shift deleted`);
       toast.success('Shift deleted');
     } catch {
       toast.error('Could not delete shift');
@@ -181,6 +183,7 @@ const ShiftModal = ({
         ),
       );
       setEditingId(null);
+      addNotification(`Shift updated: ${editStart} – ${editEnd}`);
       toast.success('Shift updated');
     } catch {
       toast.error('Could not update shift');

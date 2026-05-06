@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CalendarDays, Clock, Timer, Trash2 } from 'lucide-react';
 import { deleteShift } from '../api/shifts';
 import { toast } from 'react-toastify';
+import { addNotification } from '../utils/notifications';
 
 const Dashboard = () => {
   const [shifts, setShifts] = useState<any[]>([]);
@@ -49,6 +50,7 @@ const Dashboard = () => {
     try {
       await deleteShift(id);
       setShifts((prev) => prev.filter((s) => s._id !== id));
+      addNotification('Shift deleted');
       toast.success('Shift deleted');
     } catch {
       toast.error('Could not delete shift');
