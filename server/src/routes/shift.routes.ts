@@ -4,6 +4,7 @@ import {
   getMyShifts,
   deleteShiftController,
   updateShiftController,
+  getShiftsByDate,
 } from '../controllers/shift.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
@@ -18,6 +19,7 @@ router.post(
   createShiftController,
 );
 router.get('/me', authMiddleware, getMyShifts);
+router.get('/by-date/:date', authMiddleware, getShiftsByDate);
 router.delete('/:id', authMiddleware, deleteShiftController);
 router.patch('/:id', authMiddleware, updateShiftController);
 

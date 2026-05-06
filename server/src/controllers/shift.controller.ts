@@ -81,3 +81,20 @@ export const updateShiftController = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const getShiftsByDate = async (req: any, res: Response) => {
+  try {
+    const date = new Date(req.params.date);
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    const shifts = await Shift.find({
+      date: { $gte: start, $lte: end },
+    }).populate('userId', 'firstName lastName');
+
+    res.json(shifts);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

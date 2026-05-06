@@ -20,15 +20,14 @@ const Calendar = () => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
 
-  const fetchShifts = async () => {
-    const token = localStorage.getItem('token');
-    const res = await api.get('/shifts/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setShifts(res.data);
-  };
-
   useEffect(() => {
+    const fetchShifts = async () => {
+      const token = localStorage.getItem('token');
+      const res = await api.get('/shifts/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setShifts(res.data);
+    };
     fetchShifts();
   }, []);
 
@@ -136,7 +135,7 @@ const Calendar = () => {
 export default Calendar;
 
 // =======================
-// 🔧 SHIFT MODAL (shared)
+// 🔧 SHIFT MODAL
 // =======================
 const ShiftModal = ({
   selectedDay,
@@ -148,6 +147,28 @@ const ShiftModal = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
+  const [colleagues, setColleagues] = useState<any[]>([]);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    const fetchColleagues = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const dateStr = selectedDay.toISOString().split('T')[0];
+        const res = await api.get(`/shifts/by-date/${dateStr}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const others = res.data.filter(
+          (s: any) => s.userId?._id !== currentUser.id,
+        );
+        setColleagues(others);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchColleagues();
+  }, [selectedDay]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -156,8 +177,9 @@ const ShiftModal = ({
         headers: { Authorization: `Bearer ${token}` },
       });
       setShifts((prev: any[]) => prev.filter((s) => s._id !== id));
-      addNotification(`Shift deleted`);
+      addNotification('Shift deleted');
       toast.success('Shift deleted');
+      onClose();
     } catch {
       toast.error('Could not delete shift');
     }
@@ -226,20 +248,23 @@ const ShiftModal = ({
           </button>
         </div>
 
-        {/* CONTENT */}
+        {/* MY SHIFTS */}
+        <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
+          My Shift
+        </p>
+
         {dayShifts.length === 0 ? (
-          <div className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 text-center text-slate-400 text-sm'>
+          <div className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 text-center text-slate-400 text-sm mb-4'>
             No shift scheduled
           </div>
         ) : (
-          <div className='space-y-2'>
+          <div className='space-y-2 mb-4'>
             {dayShifts.map((shift: any) => (
               <div
                 key={shift._id}
                 className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-4'
               >
                 {editingId === shift._id ? (
-                  // EDIT MODE
                   <div className='space-y-3'>
                     <div className='flex gap-2'>
                       <input
@@ -272,7 +297,6 @@ const ShiftModal = ({
                     </div>
                   </div>
                 ) : (
-                  // VIEW MODE
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center gap-3'>
                       <CalendarDays size={20} className='text-green-500' />
@@ -302,6 +326,36 @@ const ShiftModal = ({
               </div>
             ))}
           </div>
+        )}
+
+        {/* COLLEAGUES */}
+        {colleagues.length > 0 && (
+          <>
+            <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
+              Also working
+            </p>
+            <div className='space-y-2'>
+              {colleagues.map((s: any) => (
+                <div
+                  key={s._id}
+                  className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 flex items-center gap-3'
+                >
+                  <div className='w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-xs font-semibold text-green-600 dark:text-green-400'>
+                    {s.userId?.firstName?.[0]}
+                    {s.userId?.lastName?.[0]}
+                  </div>
+                  <div>
+                    <p className='text-sm font-medium text-slate-800 dark:text-white'>
+                      {s.userId?.firstName} {s.userId?.lastName}
+                    </p>
+                    <p className='text-xs text-slate-400'>
+                      {s.startTime} – {s.endTime}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
