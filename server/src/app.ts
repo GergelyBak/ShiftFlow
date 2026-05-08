@@ -9,7 +9,16 @@ import attendanceRouter from './routes/attendance.routes';
 const app = express();
 
 // ✅ EZEK KELL LEGELÖL LEGYENEK
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'https://shift-flow-sigma.vercel.app',
+      // ide kerül majd a keypad Vercel URL is
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 // ROUTES
