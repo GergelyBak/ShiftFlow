@@ -14,7 +14,7 @@ app.use(
     origin: [
       'http://localhost:5173',
       'https://shift-flow-sigma.vercel.app',
-      // ide kerül majd a keypad Vercel URL is
+      'https://shift-flow-key-pad.vercel.app',
     ],
     credentials: true,
   }),
