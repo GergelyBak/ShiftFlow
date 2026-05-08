@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import { generateUniquePin } from '../services/attendance.services';
 
 // 🟢 REGISTER
 export const register = async (req: any, res: any) => {
@@ -9,7 +10,6 @@ export const register = async (req: any, res: any) => {
 
     // 🔍 user exists
     const existingUser = await User.findOne({ email });
-
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -17,12 +17,16 @@ export const register = async (req: any, res: any) => {
     // 🔐 hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 🔢 generate unique PIN
+    const pin = await generateUniquePin();
+
     // 🧱 create user
     const user = await User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
+      pin,
     });
 
     res.status(201).json({
@@ -33,6 +37,7 @@ export const register = async (req: any, res: any) => {
         lastName,
         email,
         role: user.role,
+        pin: user.pin, // 👈 visszaküldjük a PIN-t
       },
     });
   } catch (error: any) {
@@ -46,13 +51,11 @@ export const login = async (req: any, res: any) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(400).json({ message: 'User not found' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -70,7 +73,8 @@ export const login = async (req: any, res: any) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role, // ✅ ezt add hozzá
+        role: user.role,
+        pin: user.pin, // 👈 login után is látja a PIN-jét
       },
     });
   } catch (error: any) {

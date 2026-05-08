@@ -6,6 +6,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: 'admin' | 'employee';
+  pin: string;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -15,13 +16,11 @@ const userSchema = new mongoose.Schema<IUser>(
       required: true,
       trim: true,
     },
-
     lastName: {
       type: String,
       required: true,
       trim: true,
     },
-
     email: {
       type: String,
       required: true,
@@ -29,20 +28,23 @@ const userSchema = new mongoose.Schema<IUser>(
       lowercase: true,
       trim: true,
     },
-
     password: {
       type: String,
       required: true,
     },
-
     role: {
       type: String,
       enum: ['admin', 'employee'],
       default: 'employee',
     },
+    pin: {
+      type: String,
+      unique: true,
+      length: 4,
+    },
   },
   {
-    timestamps: true, // 🔥 createdAt, updatedAt
+    timestamps: true,
   },
 );
 
