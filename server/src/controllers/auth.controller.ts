@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { sendWelcomeEmail } from '../services/email.services';
 import User from '../models/User';
 import { generateUniquePin } from '../services/attendance.services';
 
@@ -29,6 +30,9 @@ export const register = async (req: any, res: any) => {
       pin,
     });
 
+    // 📧 send welcome email
+    await sendWelcomeEmail(email, firstName, pin, 'de');
+
     res.status(201).json({
       message: 'User created',
       user: {
@@ -37,7 +41,7 @@ export const register = async (req: any, res: any) => {
         lastName,
         email,
         role: user.role,
-        pin: user.pin, // 👈 visszaküldjük a PIN-t
+        pin: user.pin,
       },
     });
   } catch (error: any) {
@@ -74,7 +78,7 @@ export const login = async (req: any, res: any) => {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
-        pin: user.pin, // 👈 login után is látja a PIN-jét
+        pin: user.pin,
       },
     });
   } catch (error: any) {
