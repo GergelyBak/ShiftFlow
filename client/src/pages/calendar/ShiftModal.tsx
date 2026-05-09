@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
-import { CalendarDays, X, Pencil, Trash2, Check } from 'lucide-react';
+import { CalendarDays, X, Pencil, Trash2, Check, Clock } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { addNotification } from '../../utils/notifications';
 
@@ -15,13 +15,14 @@ const ShiftModal = ({
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
   const [colleagues, setColleagues] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     type: 'delete' | 'save';
     id: string;
   } | null>(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = currentUser.role === 'admin'; // ✅
+  const isAdmin = currentUser.role === 'admin';
 
   useEffect(() => {
     const fetchColleagues = async () => {
@@ -40,6 +41,29 @@ const ShiftModal = ({
       }
     };
     fetchColleagues();
+  }, [selectedDay]);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await api.get('/attendance/my', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // find approved attendance for selected day
+        const dayAttendance = res.data.find((a: any) => {
+          const d = new Date(a.checkIn);
+          return (
+            d.toDateString() === selectedDay.toDateString() &&
+            a.status === 'approved'
+          );
+        });
+        setAttendance(dayAttendance || null);
+      } catch {
+        // silent fail
+      }
+    };
+    fetchAttendance();
   }, [selectedDay]);
 
   const handleDelete = (id: string) => {
@@ -91,8 +115,6 @@ const ShiftModal = ({
               : s,
           ),
         );
-
-        // colleagues frissítése is ha admin szerkesztett
         setColleagues((prev: any[]) =>
           prev.map((s) =>
             s._id === confirmAction.id
@@ -100,7 +122,6 @@ const ShiftModal = ({
               : s,
           ),
         );
-
         setEditingId(null);
         addNotification(`Shift updated: ${editStart} – ${editEnd}`);
         toast.success('Shift updated');
@@ -112,12 +133,26 @@ const ShiftModal = ({
     setConfirmAction(null);
   };
 
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const calcDuration = (checkIn: string, checkOut?: string) => {
+    if (!checkOut) return null;
+    const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+    const hours = Math.floor(diff / 1000 / 60 / 60);
+    const minutes = Math.floor((diff / 1000 / 60) % 60);
+    return `${hours}h ${minutes}m`;
+  };
+
   const dayShifts = shifts.filter((s: any) => {
     const d = new Date(s.date);
     return d.toDateString() === selectedDay.toDateString();
   });
 
-  // 🔧 reusable shift card
   const ShiftCard = ({
     shift,
     showControls,
@@ -234,13 +269,41 @@ const ShiftModal = ({
           ) : (
             <div className='space-y-2 mb-4'>
               {dayShifts.map((shift: any) => (
-                <ShiftCard
-                  key={shift._id}
-                  shift={shift}
-                  showControls={true} // own shifts always editable
-                />
+                <ShiftCard key={shift._id} shift={shift} showControls={true} />
               ))}
             </div>
+          )}
+
+          {/* ATTENDANCE — csak ha van approved */}
+          {attendance && (
+            <>
+              <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
+                Attendance
+              </p>
+              <div className='bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-4'>
+                <div className='flex items-center gap-3'>
+                  <Clock size={20} className='text-blue-400' />
+                  <div>
+                    <p className='text-lg font-bold text-slate-900 dark:text-white tracking-tight'>
+                      {formatTime(attendance.checkIn)}
+                      {attendance.checkOut &&
+                        ` – ${formatTime(attendance.checkOut)}`}
+                    </p>
+                    <div className='flex items-center gap-2 mt-0.5'>
+                      <span className='text-xs text-slate-400'>
+                        {calcDuration(
+                          attendance.checkIn,
+                          attendance.checkOut,
+                        ) || 'Still working'}
+                      </span>
+                      <span className='text-xs font-medium text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full'>
+                        ✓ Approved
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           {/* COLLEAGUES */}
@@ -252,7 +315,6 @@ const ShiftModal = ({
               <div className='space-y-2'>
                 {colleagues.map((s: any) => (
                   <div key={s._id}>
-                    {/* naam van de collega */}
                     <div className='flex items-center gap-2 mb-1 px-1'>
                       <div className='w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-xs font-semibold text-green-600 dark:text-green-400'>
                         {s.userId?.firstName?.[0]}
@@ -262,10 +324,7 @@ const ShiftModal = ({
                         {s.userId?.firstName} {s.userId?.lastName}
                       </p>
                     </div>
-                    <ShiftCard
-                      shift={s}
-                      showControls={isAdmin} // ✅ csak admin szerkesztheti
-                    />
+                    <ShiftCard shift={s} showControls={isAdmin} />
                   </div>
                 ))}
               </div>

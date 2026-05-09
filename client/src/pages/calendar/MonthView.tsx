@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../../api/axios';
 import ShiftModal from './ShiftModal';
 
 const MonthView = ({ shifts, setShifts, currentDate, locale }: any) => {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [attendance, setAttendance] = useState<any[]>([]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -19,6 +21,21 @@ const MonthView = ({ shifts, setShifts, currentDate, locale }: any) => {
   for (let i = 0; i < startOffset; i++) days.push(null);
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await api.get('/attendance/my', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAttendance(res.data);
+      } catch {
+        // silent fail
+      }
+    };
+    fetchAttendance();
+  }, []);
+
   const getShiftsForDay = (day: number) => {
     return shifts.filter((shift: any) => {
       const d = new Date(shift.date);
@@ -26,6 +43,18 @@ const MonthView = ({ shifts, setShifts, currentDate, locale }: any) => {
         d.getDate() === day &&
         d.getMonth() === month &&
         d.getFullYear() === year
+      );
+    });
+  };
+
+  const getApprovedAttendanceForDay = (day: number) => {
+    return attendance.find((a: any) => {
+      const d = new Date(a.checkIn);
+      return (
+        d.getDate() === day &&
+        d.getMonth() === month &&
+        d.getFullYear() === year &&
+        a.status === 'approved'
       );
     });
   };
@@ -56,6 +85,7 @@ const MonthView = ({ shifts, setShifts, currentDate, locale }: any) => {
           cellDate.setHours(0, 0, 0, 0);
           const dayShifts = getShiftsForDay(day);
           const hasShift = dayShifts.length > 0;
+          const approvedAttendance = getApprovedAttendanceForDay(day);
           const isToday = cellDate.toDateString() === today.toDateString();
           const isPast = cellDate < today;
 
@@ -83,17 +113,28 @@ const MonthView = ({ shifts, setShifts, currentDate, locale }: any) => {
                 {day}
               </span>
 
-              {hasShift && (
-                <div
-                  className={`rounded-full h-1.5 w-full ${
-                    isToday
-                      ? 'bg-white/60'
-                      : isPast
-                        ? 'bg-slate-400 dark:bg-slate-500'
-                        : 'bg-green-500'
-                  }`}
-                />
-              )}
+              <div className='flex flex-col gap-0.5'>
+                {/* Shift dot — green */}
+                {hasShift && (
+                  <div
+                    className={`rounded-full h-1.5 w-full ${
+                      isToday
+                        ? 'bg-white/60'
+                        : isPast
+                          ? 'bg-slate-400 dark:bg-slate-500'
+                          : 'bg-green-500'
+                    }`}
+                  />
+                )}
+                {/* Approved attendance dot — blue */}
+                {approvedAttendance && (
+                  <div
+                    className={`rounded-full h-1.5 w-full ${
+                      isToday ? 'bg-white/40' : 'bg-blue-400'
+                    }`}
+                  />
+                )}
+              </div>
             </div>
           );
         })}
