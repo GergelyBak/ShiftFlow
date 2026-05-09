@@ -20,7 +20,6 @@ export const checkIn = async (pin: string) => {
   const user = await User.findOne({ pin });
   if (!user) throw new Error('Invalid PIN');
 
-  // Check if already checked in today without checkout
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -35,6 +34,7 @@ export const checkIn = async (pin: string) => {
   const attendance = await Attendance.create({
     userId: user._id,
     checkIn: new Date(),
+    status: 'pending',
   });
 
   return {
@@ -66,4 +66,29 @@ export const checkOut = async (pin: string) => {
     message: `Goodbye, ${user.firstName}!`,
     attendance,
   };
+};
+
+// Get own attendance (user)
+export const getMyAttendance = async (userId: string) => {
+  return await Attendance.find({ userId }).sort({ checkIn: -1 });
+};
+
+// Get all attendance (admin)
+export const getAllAttendance = async () => {
+  return await Attendance.find()
+    .populate('userId', 'firstName lastName email')
+    .sort({ checkIn: -1 });
+};
+
+// Approve attendance (admin)
+export const approveAttendance = async (attendanceId: string) => {
+  const attendance = await Attendance.findByIdAndUpdate(
+    attendanceId,
+    { status: 'approved' },
+    { new: true },
+  ).populate('userId', 'firstName lastName email');
+
+  if (!attendance) throw new Error('Attendance record not found');
+
+  return attendance;
 };

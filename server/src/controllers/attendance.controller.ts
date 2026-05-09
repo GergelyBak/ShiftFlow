@@ -24,3 +24,39 @@ export const checkOut = async (req: Request, res: Response) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// GET /api/attendance/my — saját adatok
+export const getMyAttendance = async (req: any, res: Response) => {
+  try {
+    const data = await attendanceService.getMyAttendance(req.user.id);
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/attendance/all — admin
+export const getAllAttendance = async (req: any, res: Response) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const data = await attendanceService.getAllAttendance();
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// PATCH /api/attendance/:id/approve — admin
+export const approveAttendance = async (req: any, res: Response) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const data = await attendanceService.approveAttendance(req.params.id);
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

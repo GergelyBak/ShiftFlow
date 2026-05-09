@@ -4,6 +4,7 @@ export interface IAttendance extends Document {
   userId: Types.ObjectId;
   checkIn: Date;
   checkOut?: Date;
+  status: 'pending' | 'approved';
 }
 
 const attendanceSchema = new mongoose.Schema<IAttendance>(
@@ -19,6 +20,11 @@ const attendanceSchema = new mongoose.Schema<IAttendance>(
     },
     checkOut: {
       type: Date,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'approved'],
+      default: 'pending',
     },
   },
   {
