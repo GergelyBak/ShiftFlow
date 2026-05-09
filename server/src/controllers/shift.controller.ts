@@ -98,3 +98,24 @@ export const getShiftsByDate = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const getShiftsByRange = async (req: any, res: Response) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const start = new Date(req.query.start as string);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(req.query.end as string);
+    end.setHours(23, 59, 59, 999);
+
+    const shifts = await Shift.find({
+      date: { $gte: start, $lte: end },
+    }).populate('userId', 'firstName lastName email');
+
+    res.json(shifts);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
