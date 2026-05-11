@@ -124,14 +124,6 @@ const Dashboard = () => {
     })
     .reduce((acc, a) => acc + calcAttendanceHours(a), 0);
 
-  const pastShifts = shifts
-    .filter((s) => {
-      const d = new Date(s.date);
-      d.setHours(0, 0, 0, 0);
-      return d < today;
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
   const futureShifts = shifts
     .filter((s) => {
       const d = new Date(s.date);
@@ -140,7 +132,7 @@ const Dashboard = () => {
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const lastShift = pastShifts[pastShifts.length - 1];
+  
   const nextShift = futureShifts[0];
 
   // Last approved attendance
