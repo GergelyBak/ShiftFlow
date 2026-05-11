@@ -15,13 +15,15 @@ const SummaryView = () => {
     fetchSummary();
   }, [currentDate, view]);
 
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   const getRange = () => {
     if (view === 'month') {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const start = new Date(year, month, 1);
-      const end = new Date(year, month + 1, 0); // utolsó nap
-      const fmt = (d: Date) => d.toISOString().split('T')[0];
+      const end = new Date(year, month + 1, 0);
       return { start: fmt(start), end: fmt(end) };
     } else {
       const d = new Date(currentDate);
@@ -31,11 +33,7 @@ const SummaryView = () => {
       start.setHours(0, 0, 0, 0);
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
-      return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0],
-      };
+      return { start: fmt(start), end: fmt(end) };
     }
   };
 
@@ -45,9 +43,7 @@ const SummaryView = () => {
       const { start, end } = getRange();
       const res = await api.get(
         `/attendance/summary?start=${start}&end=${end}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setSummary(res.data);
     } catch {
@@ -77,12 +73,12 @@ const SummaryView = () => {
       });
     } else {
       const { start, end } = getRange();
-      const fmt = (s: string) =>
-        new Date(s).toLocaleDateString('de-DE', {
+      const fmtLabel = (s: string) =>
+        new Date(s + 'T12:00:00').toLocaleDateString('de-DE', {
           day: '2-digit',
           month: '2-digit',
         });
-      return `${fmt(start)} – ${fmt(end)}`;
+      return `${fmtLabel(start)} – ${fmtLabel(end)}`;
     }
   };
 
@@ -94,7 +90,6 @@ const SummaryView = () => {
 
   return (
     <div className='pb-24'>
-      {/* NAV */}
       <div className='flex items-center justify-between mb-4'>
         <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex'>
           <button
@@ -138,7 +133,6 @@ const SummaryView = () => {
         </div>
       </div>
 
-      {/* CONTENT */}
       {loading ? (
         <div className='flex items-center justify-center py-12'>
           <p className='text-slate-400 text-sm'>Loading...</p>
@@ -157,7 +151,6 @@ const SummaryView = () => {
               key={s.user.id}
               className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl p-4'
             >
-              {/* User header */}
               <div className='flex items-center gap-3 mb-3'>
                 <div className='w-10 h-10 rounded-full bg-green-600 dark:bg-green-700 flex items-center justify-center text-sm font-bold text-white shrink-0'>
                   {s.user.firstName?.[0]}
@@ -171,9 +164,7 @@ const SummaryView = () => {
                 </div>
               </div>
 
-              {/* Hours grid */}
               <div className='grid grid-cols-3 gap-2'>
-                {/* Normal hours */}
                 <div className='bg-white dark:bg-slate-900 rounded-xl p-3 text-center'>
                   <p className='text-xs text-slate-400 mb-1'>Normal</p>
                   <p className='text-sm font-bold text-slate-800 dark:text-white'>
@@ -181,7 +172,6 @@ const SummaryView = () => {
                   </p>
                 </div>
 
-                {/* Holiday hours */}
                 <div
                   className={`rounded-xl p-3 text-center ${
                     s.holidayHours > 0
@@ -207,7 +197,6 @@ const SummaryView = () => {
                   </p>
                 </div>
 
-                {/* Total */}
                 <div className='bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center'>
                   <p className='text-xs text-slate-400 mb-1'>Total</p>
                   <p className='text-sm font-bold text-green-700 dark:text-green-400'>
@@ -216,7 +205,6 @@ const SummaryView = () => {
                 </div>
               </div>
 
-              {/* Holiday bonus */}
               {s.holidayBonus > 0 && (
                 <div className='mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 flex items-center justify-between'>
                   <span className='text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1'>
