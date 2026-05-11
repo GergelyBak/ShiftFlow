@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
-import { Check, Clock } from 'lucide-react';
+import { Check, Clock, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const AttendanceView = () => {
@@ -31,9 +31,7 @@ const AttendanceView = () => {
       await api.patch(
         `/attendance/${id}/approve`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setRecords((prev) =>
         prev.map((r) => (r._id === id ? { ...r, status: 'approved' } : r)),
@@ -41,6 +39,18 @@ const AttendanceView = () => {
       toast.success('Approved!');
     } catch {
       toast.error('Failed to approve');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/attendance/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRecords((prev) => prev.filter((r) => r._id !== id));
+      toast.success('Deleted!');
+    } catch {
+      toast.error('Failed to delete');
     }
   };
 
@@ -122,8 +132,8 @@ const AttendanceView = () => {
               </p>
             </div>
 
-            {/* Right — status / approve button */}
-            <div className='shrink-0'>
+            {/* Right — approve + delete */}
+            <div className='flex items-center gap-2 shrink-0'>
               {isPending ? (
                 <button
                   onClick={() => handleApprove(record._id)}
@@ -138,6 +148,12 @@ const AttendanceView = () => {
                   Approved
                 </span>
               )}
+              <button
+                onClick={() => handleDelete(record._id)}
+                className='p-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors'
+              >
+                <Trash2 size={13} />
+              </button>
             </div>
           </div>
         );
