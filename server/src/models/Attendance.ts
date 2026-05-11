@@ -6,6 +6,7 @@ export interface IAttendance extends Document {
   checkOut?: Date;
   status: 'pending' | 'approved';
   isHoliday: boolean;
+  breakMinutes: number;
 }
 
 const attendanceSchema = new mongoose.Schema<IAttendance>(
@@ -30,6 +31,10 @@ const attendanceSchema = new mongoose.Schema<IAttendance>(
     isHoliday: {
       type: Boolean,
       default: false,
+    },
+    breakMinutes: {
+      type: Number,
+      default: 0,
     },
   },
   {

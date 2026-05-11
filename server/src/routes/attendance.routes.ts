@@ -4,11 +4,16 @@ import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Public
+// Public — PIN alapú
 router.post('/checkin', attendanceController.checkIn);
 router.post('/checkout', attendanceController.checkOut);
 
 // Protected
+router.post(
+  '/manual',
+  authMiddleware,
+  attendanceController.createManualAttendance,
+);
 router.get(
   '/summary',
   authMiddleware,

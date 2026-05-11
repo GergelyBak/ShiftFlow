@@ -1,6 +1,7 @@
 import User from '../models/User';
 import Attendance from '../models/Attendance';
 import { isGermanHoliday } from '../utils/holidays';
+import { fromZonedTime } from 'date-fns-tz';
 
 // Generate a unique 4-digit PIN
 export const generateUniquePin = async (): Promise<string> => {
@@ -100,10 +101,10 @@ export const approveAttendance = async (attendanceId: string) => {
 
 // Get attendance summary (admin) — hours + holiday hours
 export const getAttendanceSummary = async (start: string, end: string) => {
-  const startDate = new Date(start);
-  startDate.setHours(0, 0, 0, 0);
-  const endDate = new Date(end);
-  endDate.setHours(23, 59, 59, 999);
+  const timezone = 'Europe/Berlin';
+
+  const startDate = fromZonedTime(`${start}T00:00:00`, timezone);
+  const endDate = fromZonedTime(`${end}T23:59:59`, timezone);
 
   const records = await Attendance.find({
     checkIn: { $gte: startDate, $lte: endDate },
@@ -111,7 +112,6 @@ export const getAttendanceSummary = async (start: string, end: string) => {
     checkOut: { $exists: true },
   }).populate('userId', 'firstName lastName email');
 
-  // Group by user
   const summary: Record<string, any> = {};
 
   for (const record of records) {
@@ -134,7 +134,8 @@ export const getAttendanceSummary = async (start: string, end: string) => {
 
     const diff =
       new Date(record.checkOut!).getTime() - new Date(record.checkIn).getTime();
-    const hours = diff / 1000 / 60 / 60;
+    const breakMs = (record.breakMinutes || 0) * 60 * 1000;
+    const hours = (diff - breakMs) / 1000 / 60 / 60;
 
     if (record.isHoliday) {
       summary[userId].holidayHours += hours;

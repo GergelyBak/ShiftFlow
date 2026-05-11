@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as attendanceService from '../services/attendance.services';
 import Attendance from '../models/Attendance';
+import { isGermanHoliday } from '../utils/holidays';
 
 export const checkIn = async (req: Request, res: Response) => {
   try {
@@ -26,7 +27,7 @@ export const checkOut = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/attendance/my — saját adatok
+// GET /api/attendance/my
 export const getMyAttendance = async (req: any, res: Response) => {
   try {
     const data = await attendanceService.getMyAttendance(req.user.id);
@@ -36,7 +37,7 @@ export const getMyAttendance = async (req: any, res: Response) => {
   }
 };
 
-// GET /api/attendance/all — admin
+// GET /api/attendance/all
 export const getAllAttendance = async (req: any, res: Response) => {
   try {
     if (req.user.role !== 'admin') {
@@ -49,7 +50,7 @@ export const getAllAttendance = async (req: any, res: Response) => {
   }
 };
 
-// PATCH /api/attendance/:id/approve — admin
+// PATCH /api/attendance/:id/approve
 export const approveAttendance = async (req: any, res: Response) => {
   try {
     if (req.user.role !== 'admin') {
@@ -61,6 +62,8 @@ export const approveAttendance = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// DELETE /api/attendance/:id
 export const deleteAttendance = async (req: any, res: Response) => {
   try {
     if (req.user.role !== 'admin') {
@@ -72,7 +75,8 @@ export const deleteAttendance = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
-// GET /api/attendance/summary — admin
+
+// GET /api/attendance/summary
 export const getAttendanceSummary = async (req: any, res: Response) => {
   try {
     if (req.user.role !== 'admin') {
@@ -87,6 +91,46 @@ export const getAttendanceSummary = async (req: any, res: Response) => {
       end as string,
     );
     res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/attendance/manual — admin
+export const createManualAttendance = async (req: any, res: Response) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const { userId, date, checkInTime, checkOutTime, breakMinutes } = req.body;
+    if (!userId || !date || !checkInTime) {
+      return res
+        .status(400)
+        .json({ message: 'userId, date and checkInTime are required' });
+    }
+
+    const checkIn = new Date(`${date}T${checkInTime}:00`);
+    const checkOut = checkOutTime
+      ? new Date(`${date}T${checkOutTime}:00`)
+      : undefined;
+    const holiday = isGermanHoliday(checkIn);
+
+    const attendance = await Attendance.create({
+      userId,
+      checkIn,
+      checkOut,
+      status: 'approved',
+      isHoliday: holiday,
+      breakMinutes: breakMinutes || 0,
+    });
+
+    const populated = await Attendance.findById(attendance._id).populate(
+      'userId',
+      'firstName lastName email',
+    );
+
+    res.status(201).json(populated);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
