@@ -19,16 +19,19 @@ const SummaryView = () => {
     if (view === 'month') {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      const start = new Date(year, month, 1).toISOString().split('T')[0];
-      const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
-      return { start, end };
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 0); // utolsó nap
+      const fmt = (d: Date) => d.toISOString().split('T')[0];
+      return { start: fmt(start), end: fmt(end) };
     } else {
       const d = new Date(currentDate);
       const day = d.getDay();
       const diff = d.getDate() - day + (day === 0 ? -6 : 1);
       const start = new Date(d.setDate(diff));
+      start.setHours(0, 0, 0, 0);
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
       return {
         start: start.toISOString().split('T')[0],
         end: end.toISOString().split('T')[0],
