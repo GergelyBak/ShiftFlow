@@ -8,30 +8,40 @@ import { addNotification } from '../utils/notifications';
 
 const Dashboard = () => {
   const [shifts, setShifts] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
 
   useEffect(() => {
-    const fetchShifts = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await api.get('/shifts/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        // ✅ dátum szerint rendezés
-        const sorted = res.data.sort(
+        const [shiftsRes, attendanceRes] = await Promise.all([
+          api.get('/shifts/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          api.get('/attendance/my', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        const sorted = shiftsRes.data.sort(
           (a: any, b: any) =>
             new Date(a.date).getTime() - new Date(b.date).getTime(),
         );
         setShifts(sorted);
+        setAttendance(
+          attendanceRes.data.filter(
+            (a: any) => a.status === 'approved' && a.checkOut,
+          ),
+        );
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     };
-    fetchShifts();
+    fetchData();
   }, []);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -64,14 +74,12 @@ const Dashboard = () => {
     });
   };
 
-  const calcHours = (shift: any) => {
-    const [sh, sm] = shift.startTime.split(':').map(Number);
-    const [eh, em] = shift.endTime.split(':').map(Number);
-    const totalMinutes = eh * 60 + em - (sh * 60 + sm);
-    let breakMinutes = 0;
-    if (totalMinutes >= 8 * 60) breakMinutes = 30;
-    else if (totalMinutes >= 6 * 60) breakMinutes = 15;
-    return (totalMinutes - breakMinutes) / 60;
+  // ── Attendance hours calculation ──────────────────────────
+  const calcAttendanceHours = (record: any) => {
+    const diff =
+      new Date(record.checkOut).getTime() - new Date(record.checkIn).getTime();
+    const breakMs = (record.breakMinutes || 0) * 60 * 1000;
+    return (diff - breakMs) / 1000 / 60 / 60;
   };
 
   const formatHours = (h: number) => {
@@ -94,26 +102,27 @@ const Dashboard = () => {
   };
   const weekStart = getWeekStart();
 
-  const weeklyHours = shifts
-    .filter((s) => {
-      const d = new Date(s.date);
-      return d >= weekStart && d <= today;
+  // ── Approved attendance hours ─────────────────────────────
+  const weeklyHours = attendance
+    .filter((a) => {
+      const d = new Date(a.checkIn);
+      return d >= weekStart && d <= new Date();
     })
-    .reduce((acc, s) => acc + calcHours(s), 0);
+    .reduce((acc, a) => acc + calcAttendanceHours(a), 0);
 
-  const monthlyHours = shifts
-    .filter((s) => {
-      const d = new Date(s.date);
+  const monthlyHours = attendance
+    .filter((a) => {
+      const d = new Date(a.checkIn);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     })
-    .reduce((acc, s) => acc + calcHours(s), 0);
+    .reduce((acc, a) => acc + calcAttendanceHours(a), 0);
 
-  const lastMonthHours = shifts
-    .filter((s) => {
-      const d = new Date(s.date);
+  const lastMonthHours = attendance
+    .filter((a) => {
+      const d = new Date(a.checkIn);
       return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
     })
-    .reduce((acc, s) => acc + calcHours(s), 0);
+    .reduce((acc, a) => acc + calcAttendanceHours(a), 0);
 
   const pastShifts = shifts
     .filter((s) => {
@@ -131,8 +140,11 @@ const Dashboard = () => {
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const lastShift = pastShifts[pastShifts.length - 1]; // ✅ legutóbbi
-  const nextShift = futureShifts[0]; // ✅ legközelebbi
+  const lastShift = pastShifts[pastShifts.length - 1];
+  const nextShift = futureShifts[0];
+
+  // Last approved attendance
+  const lastAttendance = attendance[0];
 
   const currentMonthName = now.toLocaleString(locale, { month: 'long' });
   const lastMonthName = new Date(lastMonthYear, lastMonth).toLocaleString(
@@ -140,7 +152,12 @@ const Dashboard = () => {
     { month: 'long' },
   );
 
-  // LOADING
+  const calcShiftHours = (shift: any) => {
+    const [sh, sm] = shift.startTime.split(':').map(Number);
+    const [eh, em] = shift.endTime.split(':').map(Number);
+    return (eh * 60 + em - (sh * 60 + sm)) / 60;
+  };
+
   if (loading) {
     return (
       <div className='min-h-screen flex flex-col items-center justify-center gap-4'>
@@ -198,28 +215,28 @@ const Dashboard = () => {
       <div className='grid grid-cols-2 gap-3'>
         <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
           <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
-            Last Shift
+            Last worked
           </p>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
-            {lastShift ? (
+            {lastAttendance ? (
               <>
                 <p className='text-xs text-slate-400 mb-1'>
-                  {new Date(lastShift.date).toLocaleDateString(locale, {
+                  {new Date(lastAttendance.checkIn).toLocaleDateString(locale, {
                     weekday: 'short',
                     day: '2-digit',
                     month: '2-digit',
                   })}
                 </p>
                 <p className='text-xl font-bold text-slate-900 dark:text-white'>
-                  {formatHours(calcHours(lastShift))}
+                  {formatHours(calcAttendanceHours(lastAttendance))}
                 </p>
                 <div className='flex items-center justify-between mt-1'>
-                  <p className='text-xs text-slate-400'>Hours</p>
-                  <Timer size={14} className='text-slate-300' />
+                  <p className='text-xs text-slate-400'>Approved</p>
+                  <Timer size={14} className='text-green-400' />
                 </div>
               </>
             ) : (
-              <p className='text-xs text-slate-400'>No shifts yet</p>
+              <p className='text-xs text-slate-400'>No records yet</p>
             )}
           </div>
         </div>
@@ -253,10 +270,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* WORKING HOURS */}
+      {/* WORKING HOURS — approved attendance */}
       <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
         <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 px-1'>
-          Working Hours
+          Approved Hours
         </p>
         <div className='grid grid-cols-3 gap-2'>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
@@ -325,7 +342,7 @@ const Dashboard = () => {
                 </div>
                 <div className='flex items-center gap-3'>
                   <p className='text-sm font-medium text-slate-400'>
-                    {formatHours(calcHours(shift))}h
+                    {formatHours(calcShiftHours(shift))}h
                   </p>
                   <button
                     onClick={() => handleDelete(shift._id)}
