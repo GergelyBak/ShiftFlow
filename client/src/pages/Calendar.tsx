@@ -11,12 +11,13 @@ import WeekView from './calendar/WeekView';
 import MonthView from './calendar/MonthView';
 import AttendanceView from './calendar/AttendanceView';
 import ScheduleView from './calendar/SceduleView';
+import SummaryView from './calendar/SummaryView';
 
 const Calendar = () => {
   const [shifts, setShifts] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<
-    'week' | 'month' | 'attendance' | 'schedule'
+    'week' | 'month' | 'attendance' | 'schedule' | 'summary'
   >('week');
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
@@ -124,6 +125,18 @@ const Calendar = () => {
               Schedule
             </button>
           )}
+          {isAdmin && (
+            <button
+              onClick={() => setView('summary')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                view === 'summary'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              Summary
+            </button>
+          )}
         </div>
 
         {/* Nav arrows — csak week/month nézetben */}
@@ -167,6 +180,7 @@ const Calendar = () => {
       )}
       {view === 'attendance' && <AttendanceView />}
       {view === 'schedule' && <ScheduleView />}
+      {view === 'summary' && <SummaryView />}
     </div>
   );
 };
