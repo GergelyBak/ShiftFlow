@@ -1,5 +1,6 @@
 import User from '../models/User';
 import Attendance from '../models/Attendance';
+import { isGermanHoliday } from '../utils/holidays';
 
 // Generate a unique 4-digit PIN
 export const generateUniquePin = async (): Promise<string> => {
@@ -31,14 +32,18 @@ export const checkIn = async (pin: string) => {
 
   if (existing) throw new Error('Already checked in');
 
+  const checkInTime = new Date();
+  const holiday = isGermanHoliday(checkInTime);
+
   const attendance = await Attendance.create({
     userId: user._id,
-    checkIn: new Date(),
+    checkIn: checkInTime,
     status: 'pending',
+    isHoliday: holiday,
   });
 
   return {
-    message: `Welcome, ${user.firstName}!`,
+    message: `Welcome, ${user.firstName}!${holiday ? ' 🎉 Holiday today!' : ''}`,
     attendance,
   };
 };
@@ -91,4 +96,60 @@ export const approveAttendance = async (attendanceId: string) => {
   if (!attendance) throw new Error('Attendance record not found');
 
   return attendance;
+};
+
+// Get attendance summary (admin) — hours + holiday hours
+export const getAttendanceSummary = async (start: string, end: string) => {
+  const startDate = new Date(start);
+  startDate.setHours(0, 0, 0, 0);
+  const endDate = new Date(end);
+  endDate.setHours(23, 59, 59, 999);
+
+  const records = await Attendance.find({
+    checkIn: { $gte: startDate, $lte: endDate },
+    status: 'approved',
+    checkOut: { $exists: true },
+  }).populate('userId', 'firstName lastName email');
+
+  // Group by user
+  const summary: Record<string, any> = {};
+
+  for (const record of records) {
+    const user = record.userId as any;
+    const userId = user._id.toString();
+
+    if (!summary[userId]) {
+      summary[userId] = {
+        user: {
+          id: userId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+        },
+        normalHours: 0,
+        holidayHours: 0,
+        totalHours: 0,
+      };
+    }
+
+    const diff =
+      new Date(record.checkOut!).getTime() - new Date(record.checkIn).getTime();
+    const hours = diff / 1000 / 60 / 60;
+
+    if (record.isHoliday) {
+      summary[userId].holidayHours += hours;
+    } else {
+      summary[userId].normalHours += hours;
+    }
+
+    summary[userId].totalHours += hours;
+  }
+
+  return Object.values(summary).map((s) => ({
+    ...s,
+    normalHours: Math.round(s.normalHours * 100) / 100,
+    holidayHours: Math.round(s.holidayHours * 100) / 100,
+    totalHours: Math.round(s.totalHours * 100) / 100,
+    holidayBonus: Math.round(s.holidayHours * 0.5 * 100) / 100,
+  }));
 };

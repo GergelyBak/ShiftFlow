@@ -72,3 +72,22 @@ export const deleteAttendance = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+// GET /api/attendance/summary — admin
+export const getAttendanceSummary = async (req: any, res: Response) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const { start, end } = req.query;
+    if (!start || !end) {
+      return res.status(400).json({ message: 'start and end dates required' });
+    }
+    const data = await attendanceService.getAttendanceSummary(
+      start as string,
+      end as string,
+    );
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -5,6 +5,7 @@ export interface IAttendance extends Document {
   checkIn: Date;
   checkOut?: Date;
   status: 'pending' | 'approved';
+  isHoliday: boolean;
 }
 
 const attendanceSchema = new mongoose.Schema<IAttendance>(
@@ -25,6 +26,10 @@ const attendanceSchema = new mongoose.Schema<IAttendance>(
       type: String,
       enum: ['pending', 'approved'],
       default: 'pending',
+    },
+    isHoliday: {
+      type: Boolean,
+      default: false,
     },
   },
   {
