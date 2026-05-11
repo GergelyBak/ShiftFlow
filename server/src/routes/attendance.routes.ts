@@ -11,6 +11,7 @@ router.post('/checkout', attendanceController.checkOut);
 // Protected — token kell
 router.get('/my', authMiddleware, attendanceController.getMyAttendance);
 router.get('/all', authMiddleware, attendanceController.getAllAttendance);
+router.delete('/:id', authMiddleware, attendanceController.deleteAttendance);
 router.patch(
   '/:id/approve',
   authMiddleware,
