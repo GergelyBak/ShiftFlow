@@ -7,12 +7,14 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
-import Settings from './pages/Settings';
+import Settings from './pages/profile/Settings';
 import Calendar from './pages/Calendar';
 import Create from './pages/Create';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import Notifications from './pages/Notofication';
+import WorkingHours from './pages/profile/WorkingHours';
+import Absence from './pages/profile/Absence';
 const App = () => {
   return (
     <BrowserRouter>
@@ -37,6 +39,8 @@ const App = () => {
           <Route path='/profile' element={<Profile />} />
           <Route path='/calendar' element={<Calendar />} /> {/* ✅ FIX */}
           <Route path='/settings' element={<Settings />} /> {/* ✅ FIX */}
+          <Route path='/absences' element={<Absence />} />
+          <Route path='/working-hours' element={<WorkingHours />} />
           <Route path='/create' element={<Create />} />
           <Route path='/notifications' element={<Notifications />} />
         </Route>

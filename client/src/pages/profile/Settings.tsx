@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Moon, Globe, LogOut } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { setTheme } from '../utils/theme';
+import { setTheme } from '../../utils/theme';
 import { useTranslation } from 'react-i18next';
+import { Bell, Moon, Globe, LogOut, ChevronLeft } from 'lucide-react';
 
 const Toggle = ({
   checked,
@@ -59,7 +59,20 @@ const Settings = () => {
 
   return (
     <div className='pb-24'>
-      <h1 className='text-2xl font-semibold mb-5'>{t('settings')}</h1>
+      <div className='flex items-center gap-3 mb-5'>
+        <button
+          onClick={() => navigate('/profile')}
+          className='w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center'
+        >
+          <ChevronLeft
+            size={18}
+            className='text-slate-600 dark:text-slate-300'
+          />
+        </button>
+        <h1 className='text-2xl font-semibold text-slate-900 dark:text-white'>
+          {t('settings')}
+        </h1>
+      </div>
 
       <div className='space-y-3'>
         {/* PREFERENCES */}

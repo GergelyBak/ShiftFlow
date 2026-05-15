@@ -5,9 +5,7 @@ import {
   BarChart,
   Clock,
   Plane,
-  FileText,
   Heart,
-  Key,
   Settings,
   Info,
   ChevronRight,
@@ -27,20 +25,23 @@ const Profile = () => {
     {
       items: [
         { label: t('accounts'), icon: BarChart },
-        { label: t('workingHours'), icon: Clock },
-        { label: t('absences'), icon: Plane },
-        { label: t('documents'), icon: FileText },
+        {
+          label: t('workingHours'),
+          icon: Clock,
+          onClick: () => navigate('/working-hours'),
+        },
+        {
+          label: t('absences'),
+          icon: Plane,
+          onClick: () => navigate('/absences'),
+        },
       ],
     },
     {
-      items: [
-        { label: t('timeTracking'), icon: Clock },
-        { label: t('desiredTimes'), icon: Heart },
-      ],
+      items: [{ label: t('desiredTimes'), icon: Heart }],
     },
     {
       items: [
-        { label: t('accessData'), icon: Key },
         {
           label: t('settings'),
           icon: Settings,
