@@ -1,7 +1,10 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.services';
+import {
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+} from '../services/email.services';
 import User from '../models/User';
 import { generateUniquePin } from '../services/attendance.services';
 
@@ -91,24 +94,31 @@ export const login = async (req: any, res: any) => {
 export const forgotPassword = async (req: any, res: any) => {
   try {
     const { email } = req.body;
+    console.log('forgot password request for:', email);
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'No account with that email' });
     }
+    console.log('user found:', user.firstName);
 
     const token = crypto.randomBytes(32).toString('hex');
     user.resetToken = token;
     user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
+    console.log('token saved');
 
-    const clientUrl = process.env.CLIENT_URL || 'https://shift-flow-sigma.vercel.app';
+    const clientUrl =
+      process.env.CLIENT_URL || 'https://shift-flow-sigma.vercel.app';
     const resetUrl = `${clientUrl}/reset-password?token=${token}`;
+    console.log('sending email to:', email);
 
     await sendPasswordResetEmail(user.email, user.firstName, resetUrl);
+    console.log('email sent');
 
     res.json({ message: 'Reset email sent' });
   } catch (error: any) {
+    console.error('forgot password error:', error.message);
     res.status(500).json({ message: error.message });
   }
 };
