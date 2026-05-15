@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
-import { ChevronLeft, ChevronRight, Clock, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Star, Download } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { exportAttendancePdf } from '../../utils/exportPdf';
 
 const SummaryView = () => {
   const [summary, setSummary] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'week' | 'month'>('month');
 
@@ -53,6 +55,27 @@ const SummaryView = () => {
     }
   };
 
+  const handleExportPdf = async (s: any) => {
+    setExportingId(s.user.id);
+    try {
+      const { start, end } = getRange();
+      const res = await api.get(
+        `/attendance/detail?userId=${s.user.id}&start=${start}&end=${end}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const monthLabel = currentDate.toLocaleString('de-DE', {
+        month: 'long',
+        year: 'numeric',
+      });
+      exportAttendancePdf(s.user, res.data, monthLabel, s);
+      toast.success('PDF exported!');
+    } catch {
+      toast.error('Failed to export PDF');
+    } finally {
+      setExportingId(null);
+    }
+  };
+
   const prev = () => {
     const d = new Date(currentDate);
     view === 'week' ? d.setDate(d.getDate() - 7) : d.setMonth(d.getMonth() - 1);
@@ -90,7 +113,7 @@ const SummaryView = () => {
 
   return (
     <div className='pb-24'>
-      <div className='flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between'>
+      <div className='flex items-center justify-between mb-4'>
         <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex'>
           <button
             onClick={() => setView('week')}
@@ -151,17 +174,27 @@ const SummaryView = () => {
               key={s.user.id}
               className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl p-4'
             >
-              <div className='flex items-center gap-3 mb-3'>
-                <div className='w-10 h-10 rounded-full bg-green-600 dark:bg-green-700 flex items-center justify-center text-sm font-bold text-white shrink-0'>
-                  {s.user.firstName?.[0]}
-                  {s.user.lastName?.[0]}
+              <div className='flex items-center justify-between gap-3 mb-3'>
+                <div className='flex items-center gap-3'>
+                  <div className='w-10 h-10 rounded-full bg-green-600 dark:bg-green-700 flex items-center justify-center text-sm font-bold text-white shrink-0'>
+                    {s.user.firstName?.[0]}
+                    {s.user.lastName?.[0]}
+                  </div>
+                  <div>
+                    <p className='text-sm font-semibold text-slate-800 dark:text-white'>
+                      {s.user.firstName} {s.user.lastName}
+                    </p>
+                    <p className='text-xs text-slate-400'>{s.user.email}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className='text-sm font-semibold text-slate-800 dark:text-white'>
-                    {s.user.firstName} {s.user.lastName}
-                  </p>
-                  <p className='text-xs text-slate-400'>{s.user.email}</p>
-                </div>
+                <button
+                  onClick={() => handleExportPdf(s)}
+                  disabled={exportingId === s.user.id}
+                  className='flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-green-500/10 hover:text-green-500 disabled:opacity-40 transition-colors shrink-0'
+                >
+                  <Download size={13} />
+                  {exportingId === s.user.id ? 'Exporting...' : 'PDF'}
+                </button>
               </div>
 
               <div className='grid grid-cols-3 gap-2'>
