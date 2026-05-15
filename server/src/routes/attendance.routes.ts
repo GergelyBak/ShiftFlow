@@ -9,6 +9,7 @@ router.post('/checkin', attendanceController.checkIn);
 router.post('/checkout', attendanceController.checkOut);
 
 // Protected
+
 router.post(
   '/manual',
   authMiddleware,
@@ -19,6 +20,7 @@ router.get(
   authMiddleware,
   attendanceController.getAttendanceSummary,
 );
+router.get('/detail', authMiddleware, attendanceController.getAttendanceDetail);
 router.get('/my', authMiddleware, attendanceController.getMyAttendance);
 router.get('/all', authMiddleware, attendanceController.getAllAttendance);
 router.patch(

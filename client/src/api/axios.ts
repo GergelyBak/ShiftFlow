@@ -1,6 +1,7 @@
-// client/src/api/axios.ts
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'https://shiftflow-4l1b.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api`
+    : 'http://localhost:5000/api',
 });

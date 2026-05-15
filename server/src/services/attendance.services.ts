@@ -154,3 +154,37 @@ export const getAttendanceSummary = async (start: string, end: string) => {
     holidayBonus: Math.round(s.holidayHours * 0.5 * 100) / 100,
   }));
 };
+// Get detailed attendance for one user (admin)
+export const getAttendanceDetail = async (
+  userId: string,
+  start: string,
+  end: string,
+) => {
+  const timezone = 'Europe/Berlin';
+  const startDate = fromZonedTime(`${start}T00:00:00`, timezone);
+  const endDate = fromZonedTime(`${end}T23:59:59`, timezone);
+
+  const records = await Attendance.find({
+    userId,
+    checkIn: { $gte: startDate, $lte: endDate },
+    status: 'approved',
+    checkOut: { $exists: true },
+  })
+    .populate('userId', 'firstName lastName email')
+    .sort({ checkIn: 1 });
+
+  return records.map((r) => {
+    const diff =
+      new Date(r.checkOut!).getTime() - new Date(r.checkIn).getTime();
+    const breakMs = (r.breakMinutes || 0) * 60 * 1000;
+    const hours = (diff - breakMs) / 1000 / 60 / 60;
+    return {
+      date: r.checkIn,
+      checkIn: r.checkIn,
+      checkOut: r.checkOut,
+      breakMinutes: r.breakMinutes || 0,
+      hours: Math.round(hours * 100) / 100,
+      isHoliday: r.isHoliday,
+    };
+  });
+};

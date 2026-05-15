@@ -135,3 +135,23 @@ export const createManualAttendance = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+// GET /api/attendance/detail?userId=...&start=...&end=...
+export const getAttendanceDetail = async (req: any, res: Response) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const { userId, start, end } = req.query;
+    if (!userId || !start || !end) {
+      return res.status(400).json({ message: 'userId, start and end required' });
+    }
+    const data = await attendanceService.getAttendanceDetail(
+      userId as string,
+      start as string,
+      end as string,
+    );
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
