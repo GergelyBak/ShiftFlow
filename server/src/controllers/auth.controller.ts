@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { sendWelcomeEmail } from '../services/email.services';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.services';
 import User from '../models/User';
 import { generateUniquePin } from '../services/attendance.services';
 
@@ -81,6 +82,57 @@ export const login = async (req: any, res: any) => {
         pin: user.pin,
       },
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 🟡 FORGOT PASSWORD
+export const forgotPassword = async (req: any, res: any) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No account with that email' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetToken = token;
+    user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+    await user.save();
+
+    const clientUrl = process.env.CLIENT_URL || 'https://shift-flow-sigma.vercel.app';
+    const resetUrl = `${clientUrl}/reset-password?token=${token}`;
+
+    await sendPasswordResetEmail(user.email, user.firstName, resetUrl);
+
+    res.json({ message: 'Reset email sent' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 🔴 RESET PASSWORD
+export const resetPassword = async (req: any, res: any) => {
+  try {
+    const { token, password } = req.body;
+
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset link' });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+
+    res.json({ message: 'Password reset successful' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

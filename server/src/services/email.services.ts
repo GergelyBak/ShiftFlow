@@ -57,3 +57,32 @@ export const sendWelcomeEmail = async (
     `,
   });
 };
+
+export const sendPasswordResetEmail = async (
+  to: string,
+  firstName: string,
+  resetUrl: string,
+) => {
+  await transporter.sendMail({
+    from: `"ShiftFlow" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: 'ShiftFlow – Password Reset',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8fafc; border-radius: 16px;">
+        <h1 style="color: #16a34a; font-size: 24px; margin-bottom: 8px;">Password Reset 🔐</h1>
+        <p style="color: #475569; font-size: 15px;">Hi ${firstName}, we received a request to reset your ShiftFlow password.</p>
+        <p style="color: #475569; font-size: 15px;">Click the button below to set a new password. The link expires in <strong>1 hour</strong>.</p>
+
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetUrl}" style="background: #16a34a; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 15px; font-weight: bold; display: inline-block;">
+            Reset Password
+          </a>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+        <p style="color: #94a3b8; font-size: 12px; text-align: center;">© ShiftFlow 2026</p>
+      </div>
+    `,
+  });
+};

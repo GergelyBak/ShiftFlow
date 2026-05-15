@@ -7,6 +7,8 @@ export interface IUser extends Document {
   password: string;
   role: 'admin' | 'employee';
   pin: string;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -42,6 +44,8 @@ const userSchema = new mongoose.Schema<IUser>(
       unique: true,
       length: 4,
     },
+    resetToken: { type: String },
+    resetTokenExpiry: { type: Date },
   },
   {
     timestamps: true,

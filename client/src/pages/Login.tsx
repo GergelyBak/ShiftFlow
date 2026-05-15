@@ -108,6 +108,15 @@ const Login = () => {
             >
               {loading ? t('loading') : t('login')}
             </button>
+
+            <p className='text-center text-xs text-slate-400 dark:text-slate-500'>
+              <span
+                onClick={() => navigate('/forgot-password')}
+                className='text-green-500 cursor-pointer hover:underline'
+              >
+                Forgot password?
+              </span>
+            </p>
           </div>
         </div>
 
