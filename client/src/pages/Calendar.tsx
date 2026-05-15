@@ -77,8 +77,8 @@ const Calendar = () => {
   return (
     <div className='pb-24'>
       {/* HEADER */}
-      <div className='flex items-center justify-between mb-5'>
-        <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex gap-1'>
+      <div className='flex flex-col gap-2 mb-5 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex gap-1 overflow-x-auto'>
           <button
             onClick={() => setView('week')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -141,7 +141,7 @@ const Calendar = () => {
 
         {/* Nav arrows — csak week/month nézetben */}
         {showNav && (
-          <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full'>
+          <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full self-start sm:self-auto'>
             <button
               onClick={prev}
               className='text-slate-600 dark:text-slate-300 p-0.5'

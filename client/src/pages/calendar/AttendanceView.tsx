@@ -270,6 +270,10 @@ const AttendanceView = () => {
                   <p className='text-xs text-slate-400'>
                     {formatDate(record.checkIn)}
                   </p>
+                  <p className='text-xs font-mono text-slate-500 dark:text-slate-400 sm:hidden'>
+                    {formatTime(record.checkIn)} —{' '}
+                    {record.checkOut ? formatTime(record.checkOut) : '?'}
+                  </p>
                 </div>
               </div>
 

@@ -90,7 +90,7 @@ const SummaryView = () => {
 
   return (
     <div className='pb-24'>
-      <div className='flex items-center justify-between mb-4'>
+      <div className='flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex'>
           <button
             onClick={() => setView('week')}
