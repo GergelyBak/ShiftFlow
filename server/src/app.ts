@@ -6,6 +6,7 @@ import shiftRoutes from './routes/shift.routes';
 import swapRoutes from './routes/swap.routes';
 import userRoutes from './routes/user.routes';
 import attendanceRouter from './routes/attendance.routes';
+import absenceRouter from './routes/absence.routes';
 const app = express();
 
 // ✅ EZEK KELL LEGELÖL LEGYENEK
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/attendance', attendanceRouter);
+app.use('/api/absences', absenceRouter);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/swaps', swapRoutes);
 app.use('/api/test', testRoutes);
