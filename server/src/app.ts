@@ -7,6 +7,7 @@ import swapRoutes from './routes/swap.routes';
 import userRoutes from './routes/user.routes';
 import attendanceRouter from './routes/attendance.routes';
 import absenceRouter from './routes/absence.routes';
+import availabilityRouter from './routes/availability.routes';
 const app = express();
 
 // ✅ EZEK KELL LEGELÖL LEGYENEK
@@ -30,5 +31,6 @@ app.use('/api/absences', absenceRouter);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/swaps', swapRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/availability', availabilityRouter);
 
 export default app;
