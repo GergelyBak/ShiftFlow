@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
 import { ChevronLeft, ChevronRight, Clock, Star, Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { exportAttendancePdf } from '../../utils/exportPdf';
 
@@ -10,6 +11,7 @@ const SummaryView = () => {
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'week' | 'month'>('month');
+  const { t } = useTranslation();
 
   const token = localStorage.getItem('token');
 
@@ -49,7 +51,7 @@ const SummaryView = () => {
       );
       setSummary(res.data);
     } catch {
-      toast.error('Failed to load summary');
+      toast.error(t('toastFailedSummary'));
     } finally {
       setLoading(false);
     }
@@ -68,9 +70,9 @@ const SummaryView = () => {
         year: 'numeric',
       });
       exportAttendancePdf(s.user, res.data, monthLabel, s);
-      toast.success('PDF exported!');
+      toast.success(t('toastPdfExported'));
     } catch {
-      toast.error('Failed to export PDF');
+      toast.error(t('toastFailedPdf'));
     } finally {
       setExportingId(null);
     }
@@ -113,7 +115,7 @@ const SummaryView = () => {
 
   return (
     <div className='pb-24'>
-      <div className='flex items-center justify-between mb-4'>
+      <div className='flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex'>
           <button
             onClick={() => setView('week')}
@@ -123,7 +125,7 @@ const SummaryView = () => {
                 : 'text-slate-500 dark:text-slate-400'
             }`}
           >
-            Week
+            {t('week')}
           </button>
           <button
             onClick={() => setView('month')}
@@ -133,24 +135,18 @@ const SummaryView = () => {
                 : 'text-slate-500 dark:text-slate-400'
             }`}
           >
-            Month
+            {t('month')}
           </button>
         </div>
 
-        <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full'>
-          <button
-            onClick={prev}
-            className='text-slate-600 dark:text-slate-300 p-0.5'
-          >
+        <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full self-start sm:self-auto'>
+          <button onClick={prev} className='text-slate-600 dark:text-slate-300 p-0.5'>
             <ChevronLeft size={16} />
           </button>
           <span className='text-sm font-medium text-slate-700 dark:text-slate-200 px-1'>
             {rangeLabel()}
           </span>
-          <button
-            onClick={next}
-            className='text-slate-600 dark:text-slate-300 p-0.5'
-          >
+          <button onClick={next} className='text-slate-600 dark:text-slate-300 p-0.5'>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -158,14 +154,12 @@ const SummaryView = () => {
 
       {loading ? (
         <div className='flex items-center justify-center py-12'>
-          <p className='text-slate-400 text-sm'>Loading...</p>
+          <p className='text-slate-400 text-sm'>{t('loading')}</p>
         </div>
       ) : summary.length === 0 ? (
         <div className='flex flex-col items-center justify-center py-12 gap-2'>
           <Clock size={32} className='text-slate-400' />
-          <p className='text-slate-400 text-sm'>
-            No approved records for this period
-          </p>
+          <p className='text-slate-400 text-sm'>{t('noApprovedRecords')}</p>
         </div>
       ) : (
         <div className='space-y-3'>
@@ -193,13 +187,13 @@ const SummaryView = () => {
                   className='flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-green-500/10 hover:text-green-500 disabled:opacity-40 transition-colors shrink-0'
                 >
                   <Download size={13} />
-                  {exportingId === s.user.id ? 'Exporting...' : 'PDF'}
+                  {exportingId === s.user.id ? t('exporting') : t('pdf')}
                 </button>
               </div>
 
               <div className='grid grid-cols-3 gap-2'>
                 <div className='bg-white dark:bg-slate-900 rounded-xl p-3 text-center'>
-                  <p className='text-xs text-slate-400 mb-1'>Normal</p>
+                  <p className='text-xs text-slate-400 mb-1'>{t('normal')}</p>
                   <p className='text-sm font-bold text-slate-800 dark:text-white'>
                     {formatHours(s.normalHours)}
                   </p>
@@ -217,7 +211,7 @@ const SummaryView = () => {
                       size={10}
                       className={s.holidayHours > 0 ? 'text-amber-500' : ''}
                     />
-                    Holiday
+                    {t('holiday')}
                   </p>
                   <p
                     className={`text-sm font-bold ${
@@ -231,7 +225,7 @@ const SummaryView = () => {
                 </div>
 
                 <div className='bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center'>
-                  <p className='text-xs text-slate-400 mb-1'>Total</p>
+                  <p className='text-xs text-slate-400 mb-1'>{t('total')}</p>
                   <p className='text-sm font-bold text-green-700 dark:text-green-400'>
                     {formatHours(s.totalHours)}
                   </p>
@@ -241,7 +235,7 @@ const SummaryView = () => {
               {s.holidayBonus > 0 && (
                 <div className='mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 flex items-center justify-between'>
                   <span className='text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1'>
-                    🎉 Holiday bonus (+50%)
+                    🎉 {t('holidayBonus')}
                   </span>
                   <span className='text-xs font-bold text-amber-600 dark:text-amber-400'>
                     +{formatHours(s.holidayBonus)}

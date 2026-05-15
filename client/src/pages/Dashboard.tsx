@@ -60,10 +60,10 @@ const Dashboard = () => {
     try {
       await deleteShift(id);
       setShifts((prev) => prev.filter((s) => s._id !== id));
-      addNotification('Shift deleted');
-      toast.success('Shift deleted');
+      addNotification(t('toastShiftDeleted'));
+      toast.success(t('toastShiftDeleted'));
     } catch {
-      toast.error('Could not delete shift');
+      toast.error(t('toastCouldNotDelete'));
     }
   };
 
@@ -74,7 +74,6 @@ const Dashboard = () => {
     });
   };
 
-  // ── Attendance hours calculation ──────────────────────────
   const calcAttendanceHours = (record: any) => {
     const diff =
       new Date(record.checkOut).getTime() - new Date(record.checkIn).getTime();
@@ -102,7 +101,6 @@ const Dashboard = () => {
   };
   const weekStart = getWeekStart();
 
-  // ── Approved attendance hours ─────────────────────────────
   const weeklyHours = attendance
     .filter((a) => {
       const d = new Date(a.checkIn);
@@ -132,10 +130,7 @@ const Dashboard = () => {
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  
   const nextShift = futureShifts[0];
-
-  // Last approved attendance
   const lastAttendance = attendance[0];
 
   const currentMonthName = now.toLocaleString(locale, { month: 'long' });
@@ -154,7 +149,7 @@ const Dashboard = () => {
     return (
       <div className='min-h-screen flex flex-col items-center justify-center gap-4'>
         <div className='w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-green-500 animate-spin' />
-        <p className='text-sm text-slate-400 dark:text-slate-500'>Loading...</p>
+        <p className='text-sm text-slate-400 dark:text-slate-500'>{t('loading')}</p>
       </div>
     );
   }
@@ -169,7 +164,7 @@ const Dashboard = () => {
       {/* 5-DAY PREVIEW */}
       <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
         <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 px-1'>
-          5-Day Preview
+          {t('fiveDayPreview')}
         </p>
         <div className='grid grid-cols-5 gap-2'>
           {next5Days.map((day, i) => {
@@ -186,7 +181,7 @@ const Dashboard = () => {
               >
                 <p className='text-xs text-slate-400'>
                   {isToday
-                    ? 'Today'
+                    ? t('today')
                     : day.toLocaleDateString(locale, { weekday: 'short' })}
                 </p>
                 <p className='text-base font-bold text-slate-800 dark:text-white'>
@@ -207,7 +202,7 @@ const Dashboard = () => {
       <div className='grid grid-cols-2 gap-3'>
         <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
           <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
-            Last worked
+            {t('lastWorked')}
           </p>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             {lastAttendance ? (
@@ -223,19 +218,19 @@ const Dashboard = () => {
                   {formatHours(calcAttendanceHours(lastAttendance))}
                 </p>
                 <div className='flex items-center justify-between mt-1'>
-                  <p className='text-xs text-slate-400'>Approved</p>
+                  <p className='text-xs text-slate-400'>{t('approved')}</p>
                   <Timer size={14} className='text-green-400' />
                 </div>
               </>
             ) : (
-              <p className='text-xs text-slate-400'>No records yet</p>
+              <p className='text-xs text-slate-400'>{t('noRecords')}</p>
             )}
           </div>
         </div>
 
         <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
           <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
-            Next Shift
+            {t('nextShift')}
           </p>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             {nextShift ? (
@@ -251,30 +246,30 @@ const Dashboard = () => {
                   {nextShift.startTime}–{nextShift.endTime}
                 </p>
                 <div className='flex items-center justify-between mt-1'>
-                  <p className='text-xs text-slate-400'>Clock</p>
+                  <p className='text-xs text-slate-400'>{t('clock')}</p>
                   <CalendarDays size={14} className='text-slate-300' />
                 </div>
               </>
             ) : (
-              <p className='text-xs text-slate-400'>No upcoming</p>
+              <p className='text-xs text-slate-400'>{t('noUpcoming')}</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* WORKING HOURS — approved attendance */}
+      {/* WORKING HOURS */}
       <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-3'>
         <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 px-1'>
-          Approved Hours
+          {t('approvedHours')}
         </p>
         <div className='grid grid-cols-3 gap-2'>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
-            <p className='text-xs text-slate-400 mb-1'>This week</p>
+            <p className='text-xs text-slate-400 mb-1'>{t('thisWeek')}</p>
             <p className='text-lg font-bold text-slate-900 dark:text-white'>
               {formatHours(weeklyHours)}
             </p>
             <div className='flex items-center justify-between mt-1'>
-              <p className='text-xs text-slate-400'>Hours</p>
+              <p className='text-xs text-slate-400'>{t('hours')}</p>
               <Clock size={14} className='text-slate-300' />
             </div>
           </div>
@@ -285,7 +280,7 @@ const Dashboard = () => {
               {formatHours(monthlyHours)}
             </p>
             <div className='flex items-center justify-between mt-1'>
-              <p className='text-xs text-slate-400'>Hours</p>
+              <p className='text-xs text-slate-400'>{t('hours')}</p>
               <Clock size={14} className='text-slate-300' />
             </div>
           </div>
@@ -296,7 +291,7 @@ const Dashboard = () => {
               {formatHours(lastMonthHours)}
             </p>
             <div className='flex items-center justify-between mt-1'>
-              <p className='text-xs text-slate-400'>Hours</p>
+              <p className='text-xs text-slate-400'>{t('hours')}</p>
               <Clock size={14} className='text-slate-300' />
             </div>
           </div>

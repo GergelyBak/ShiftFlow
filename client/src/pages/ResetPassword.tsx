@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { api } from '../api/axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
 
@@ -14,18 +16,18 @@ const ResetPassword = () => {
   const [done, setDone] = useState(false);
 
   const handleSubmit = async () => {
-    if (!password || !confirm) return toast.error('Please fill in all fields');
-    if (password.length < 6) return toast.error('Password must be at least 6 characters');
-    if (password !== confirm) return toast.error('Passwords do not match');
-    if (!token) return toast.error('Invalid reset link');
+    if (!password || !confirm) return toast.error(t('fillAllFields'));
+    if (password.length < 6) return toast.error(t('passwordMinLength'));
+    if (password !== confirm) return toast.error(t('passwordsMismatch'));
+    if (!token) return toast.error(t('invalidResetLink'));
 
     try {
       setLoading(true);
       await api.post('/auth/reset-password', { token, password });
       setDone(true);
-      toast.success('Password updated!');
+      toast.success(t('passwordUpdated'));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Something went wrong');
+      toast.error(err.response?.data?.message || t('errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,7 @@ const ResetPassword = () => {
             ShiftFlow
           </h1>
           <p className='text-slate-500 dark:text-slate-400 text-sm mt-1'>
-            Set a new password
+            {t('setNewPassword')}
           </p>
         </div>
 
@@ -49,44 +51,44 @@ const ResetPassword = () => {
               <div className='text-center py-4 space-y-2'>
                 <p className='text-2xl'>✅</p>
                 <p className='text-sm font-semibold text-slate-800 dark:text-white'>
-                  Password updated!
+                  {t('passwordUpdated')}
                 </p>
                 <p className='text-xs text-slate-400'>
-                  You can now log in with your new password.
+                  {t('passwordUpdatedInfo')}
                 </p>
                 <button
                   onClick={() => navigate('/')}
                   className='w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2'
                 >
-                  Go to login
+                  {t('goToLogin')}
                 </button>
               </div>
             ) : (
               <>
                 <div>
                   <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                    New password
+                    {t('newPassword')}
                   </label>
                   <input
                     type='password'
-                    placeholder='Min. 6 characters'
+                    placeholder={t('passwordMinChars')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                    className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
                   />
                 </div>
 
                 <div>
                   <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                    Confirm password
+                    {t('confirmPassword')}
                   </label>
                   <input
                     type='password'
-                    placeholder='Repeat your password'
+                    placeholder={t('repeatPassword')}
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                    className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
                   />
                 </div>
 
@@ -95,7 +97,7 @@ const ResetPassword = () => {
                   disabled={loading}
                   className='w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2'
                 >
-                  {loading ? 'Saving...' : 'Set new password'}
+                  {loading ? t('saving') : t('setPasswordBtn')}
                 </button>
               </>
             )}

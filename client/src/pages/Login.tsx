@@ -114,7 +114,7 @@ const Login = () => {
                 onClick={() => navigate('/forgot-password')}
                 className='text-green-500 cursor-pointer hover:underline'
               >
-                Forgot password?
+                {t('forgotPassword')}
               </span>
             </p>
           </div>

@@ -84,7 +84,7 @@ const DesiredForm = ({ isAdmin }: { isAdmin: boolean }) => {
     }
 
     if (isAdmin && !selectedUserId) {
-      return toast.error('Please select a user');
+      return toast.error(t('toastSelectUser'));
     }
 
     try {
@@ -123,7 +123,7 @@ const DesiredForm = ({ isAdmin }: { isAdmin: boolean }) => {
         {isAdmin && (
           <div>
             <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-              Employee
+              {t('employee')}
             </label>
             <select
               value={selectedUserId}
@@ -142,33 +142,33 @@ const DesiredForm = ({ isAdmin }: { isAdmin: boolean }) => {
         {/* DATE */}
         <div>
           <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-            Date
+            {t('date')}
           </label>
           <input
             type='date'
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+            className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
           />
         </div>
 
         {/* TIME */}
         <div>
           <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-            Time
+            {t('time')}
           </label>
           <div className='flex gap-2'>
             <input
               type='time'
               value={start}
               onChange={(e) => setStart(e.target.value)}
-              className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+              className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
             />
             <input
               type='time'
               value={end}
               onChange={(e) => setEnd(e.target.value)}
-              className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+              className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
             />
           </div>
         </div>
@@ -209,13 +209,13 @@ const AbsenceForm = () => {
       <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-5 space-y-4'>
         <div>
           <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-            Date
+            {t('date')}
           </label>
           <input
             type='date'
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+            className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
           />
         </div>
 

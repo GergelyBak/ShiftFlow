@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { api } from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
   const handleSubmit = async () => {
-    if (!email) return toast.error('Please enter your email');
+    if (!email) return toast.error(t('pleaseEnterEmail'));
 
     try {
       setLoading(true);
       await api.post('/auth/forgot-password', { email });
       setSent(true);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Something went wrong');
+      toast.error(err.response?.data?.message || t('errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -31,7 +33,7 @@ const ForgotPassword = () => {
             ShiftFlow
           </h1>
           <p className='text-slate-500 dark:text-slate-400 text-sm mt-1'>
-            Reset your password
+            {t('resetYourPassword')}
           </p>
         </div>
 
@@ -41,25 +43,25 @@ const ForgotPassword = () => {
               <div className='text-center py-4 space-y-2'>
                 <p className='text-2xl'>📧</p>
                 <p className='text-sm font-semibold text-slate-800 dark:text-white'>
-                  Check your email
+                  {t('checkYourEmail')}
                 </p>
                 <p className='text-xs text-slate-400'>
-                  We sent a reset link to <strong>{email}</strong>. It expires in 1 hour.
+                  {t('resetLinkSentTo', { email })}
                 </p>
               </div>
             ) : (
               <>
                 <div>
                   <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                    Email
+                    {t('email')}
                   </label>
                   <input
                     type='email'
-                    placeholder='your@email.com'
+                    placeholder={t('emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    className='w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                    className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
                   />
                 </div>
 
@@ -68,7 +70,7 @@ const ForgotPassword = () => {
                   disabled={loading}
                   className='w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm transition-colors mt-2'
                 >
-                  {loading ? 'Sending...' : 'Send reset link'}
+                  {loading ? t('sending') : t('sendResetLink')}
                 </button>
               </>
             )}
@@ -80,7 +82,7 @@ const ForgotPassword = () => {
             onClick={() => navigate('/')}
             className='text-green-500 font-medium cursor-pointer'
           >
-            Back to login
+            {t('backToLogin')}
           </span>
         </p>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
 import { CalendarDays, X, Pencil, Trash2, Check, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { addNotification } from '../../utils/notifications';
 
@@ -20,6 +21,7 @@ const ShiftModal = ({
     type: 'delete' | 'save';
     id: string;
   } | null>(null);
+  const { t } = useTranslation();
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser.role === 'admin';
@@ -50,7 +52,6 @@ const ShiftModal = ({
         const res = await api.get('/attendance/my', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // find approved attendance for selected day
         const dayAttendance = res.data.find((a: any) => {
           const d = new Date(a.checkIn);
           return (
@@ -92,11 +93,11 @@ const ShiftModal = ({
         setShifts((prev: any[]) =>
           prev.filter((s) => s._id !== confirmAction.id),
         );
-        addNotification('Shift deleted');
-        toast.success('Shift deleted');
+        addNotification(t('toastShiftDeleted'));
+        toast.success(t('toastShiftDeleted'));
         onClose();
       } catch {
-        toast.error('Could not delete shift');
+        toast.error(t('toastCouldNotDelete'));
       }
     }
 
@@ -123,10 +124,10 @@ const ShiftModal = ({
           ),
         );
         setEditingId(null);
-        addNotification(`Shift updated: ${editStart} – ${editEnd}`);
-        toast.success('Shift updated');
+        addNotification(`${t('toastShiftUpdated')}: ${editStart} – ${editEnd}`);
+        toast.success(t('toastShiftUpdated'));
       } catch {
-        toast.error('Could not update shift');
+        toast.error(t('toastCouldNotUpdate'));
       }
     }
 
@@ -168,13 +169,13 @@ const ShiftModal = ({
               type='time'
               value={editStart}
               onChange={(e) => setEditStart(e.target.value)}
-              className='w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+              className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
             />
             <input
               type='time'
               value={editEnd}
               onChange={(e) => setEditEnd(e.target.value)}
-              className='w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+              className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
             />
           </div>
           <div className='flex gap-2'>
@@ -183,13 +184,13 @@ const ShiftModal = ({
               className='flex-1 bg-green-500 text-white py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-1'
             >
               <Check size={14} />
-              Save
+              {t('save')}
             </button>
             <button
               onClick={() => setEditingId(null)}
               className='flex-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 rounded-xl text-sm font-medium'
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -201,7 +202,7 @@ const ShiftModal = ({
               <p className='text-lg font-bold text-slate-900 dark:text-white tracking-tight'>
                 {shift.startTime} – {shift.endTime}
               </p>
-              <p className='text-xs text-slate-400 mt-0.5'>Shift</p>
+              <p className='text-xs text-slate-400 mt-0.5'>{t('shift')}</p>
             </div>
           </div>
           {showControls && (
@@ -259,12 +260,12 @@ const ShiftModal = ({
 
           {/* MY SHIFTS */}
           <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
-            My Shift
+            {t('myShift')}
           </p>
 
           {dayShifts.length === 0 ? (
             <div className='bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 text-center text-slate-400 text-sm mb-4'>
-              No shift scheduled
+              {t('noShiftScheduled')}
             </div>
           ) : (
             <div className='space-y-2 mb-4'>
@@ -274,11 +275,11 @@ const ShiftModal = ({
             </div>
           )}
 
-          {/* ATTENDANCE — csak ha van approved */}
+          {/* ATTENDANCE */}
           {attendance && (
             <>
               <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
-                Attendance
+                {t('attendance')}
               </p>
               <div className='bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-4'>
                 <div className='flex items-center gap-3'>
@@ -291,13 +292,11 @@ const ShiftModal = ({
                     </p>
                     <div className='flex items-center gap-2 mt-0.5'>
                       <span className='text-xs text-slate-400'>
-                        {calcDuration(
-                          attendance.checkIn,
-                          attendance.checkOut,
-                        ) || 'Still working'}
+                        {calcDuration(attendance.checkIn, attendance.checkOut) ||
+                          t('stillWorking')}
                       </span>
                       <span className='text-xs font-medium text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full'>
-                        ✓ Approved
+                        ✓ {t('approved')}
                       </span>
                     </div>
                   </div>
@@ -310,7 +309,7 @@ const ShiftModal = ({
           {colleagues.length > 0 && (
             <>
               <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2'>
-                {isAdmin ? 'Team shifts' : 'Also working'}
+                {isAdmin ? t('teamShifts') : t('alsoWorking')}
               </p>
               <div className='space-y-2'>
                 {colleagues.map((s: any) => (
@@ -345,20 +344,20 @@ const ShiftModal = ({
           >
             <p className='text-base font-semibold text-slate-900 dark:text-white mb-1'>
               {confirmAction.type === 'delete'
-                ? 'Delete shift?'
-                : 'Save changes?'}
+                ? t('deleteShiftConfirm')
+                : t('saveChangesConfirm')}
             </p>
             <p className='text-sm text-slate-400 mb-5'>
               {confirmAction.type === 'delete'
-                ? 'This action cannot be undone.'
-                : `Update shift to ${editStart} – ${editEnd}?`}
+                ? t('deleteConfirmMsg')
+                : t('updateShiftMsg', { start: editStart, end: editEnd })}
             </p>
             <div className='flex gap-2'>
               <button
                 onClick={() => setConfirmAction(null)}
                 className='flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 py-2.5 rounded-2xl text-sm font-medium'
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={confirmExecute}
@@ -368,7 +367,7 @@ const ShiftModal = ({
                     : 'bg-green-500 hover:bg-green-600'
                 }`}
               >
-                {confirmAction.type === 'delete' ? 'Delete' : 'Save'}
+                {confirmAction.type === 'delete' ? t('delete') : t('save')}
               </button>
             </div>
           </div>

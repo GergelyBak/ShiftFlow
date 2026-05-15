@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
 import { ChevronLeft, ChevronRight, Check, X, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 
 type View = 'week' | 'month';
@@ -17,6 +18,7 @@ const ScheduleView = () => {
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const token = localStorage.getItem('token');
 
@@ -35,7 +37,7 @@ const ScheduleView = () => {
       });
       setUsers(res.data);
     } catch {
-      toast.error('Failed to load users');
+      toast.error(t('toastFailedLoadUsers'));
     }
   };
 
@@ -49,11 +51,10 @@ const ScheduleView = () => {
       });
       setShifts(res.data);
     } catch {
-      toast.error('Failed to load shifts');
+      toast.error(t('toastFailedLoadShifts'));
     }
   };
 
-  // ── Date helpers ──────────────────────────────────────────
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -106,7 +107,6 @@ const ScheduleView = () => {
     }
   };
 
-  // ── Shift helpers ─────────────────────────────────────────
   const getShiftForCell = (userId: string, date: Date) => {
     return shifts.find((s: any) => {
       const sDate = new Date(s.date);
@@ -161,10 +161,10 @@ const ScheduleView = () => {
         );
       }
       await fetchShifts();
-      toast.success('Shift saved');
+      toast.success(t('toastShiftSaved'));
       closeEdit();
     } catch {
-      toast.error('Failed to save shift');
+      toast.error(t('toastFailedSaveShift'));
     } finally {
       setLoading(false);
     }
@@ -176,10 +176,10 @@ const ScheduleView = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchShifts();
-      toast.success('Shift deleted');
+      toast.success(t('toastShiftDeleted'));
       closeEdit();
     } catch {
-      toast.error('Failed to delete shift');
+      toast.error(t('toastFailedDeleteShift'));
     }
   };
 
@@ -200,7 +200,7 @@ const ScheduleView = () => {
                 : 'text-slate-500 dark:text-slate-400'
             }`}
           >
-            Week
+            {t('week')}
           </button>
           <button
             onClick={() => setView('month')}
@@ -210,24 +210,18 @@ const ScheduleView = () => {
                 : 'text-slate-500 dark:text-slate-400'
             }`}
           >
-            Month
+            {t('month')}
           </button>
         </div>
 
-        <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full'>
-          <button
-            onClick={prev}
-            className='text-slate-600 dark:text-slate-300 p-0.5'
-          >
+        <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full self-start sm:self-auto'>
+          <button onClick={prev} className='text-slate-600 dark:text-slate-300 p-0.5'>
             <ChevronLeft size={16} />
           </button>
           <span className='text-sm font-medium text-slate-700 dark:text-slate-200 px-1'>
             {rangeLabel()}
           </span>
-          <button
-            onClick={next}
-            className='text-slate-600 dark:text-slate-300 p-0.5'
-          >
+          <button onClick={next} className='text-slate-600 dark:text-slate-300 p-0.5'>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -236,11 +230,10 @@ const ScheduleView = () => {
       {/* TABLE */}
       <div className='overflow-x-auto rounded-2xl'>
         <table className='w-full border-collapse min-w-max'>
-          {/* HEADER */}
           <thead>
             <tr>
               <th className='sticky left-0 z-10 bg-slate-200 dark:bg-slate-800 text-left px-3 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-24 rounded-tl-2xl'>
-                Employee
+                {t('employee')}
               </th>
               {days.map((day, i) => {
                 const isToday = day.toDateString() === today.toDateString();
@@ -268,7 +261,6 @@ const ScheduleView = () => {
             </tr>
           </thead>
 
-          {/* BODY */}
           <tbody>
             {users.map((user, userIdx) => (
               <tr
@@ -279,7 +271,6 @@ const ScheduleView = () => {
                     : 'bg-slate-50 dark:bg-slate-900/50'
                 }
               >
-                {/* USER */}
                 <td className='sticky left-0 z-10 px-3 py-2 bg-inherit'>
                   <div className='flex items-center gap-2'>
                     <div className='w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-xs font-bold text-white shrink-0'>
@@ -292,7 +283,6 @@ const ScheduleView = () => {
                   </div>
                 </td>
 
-                {/* CELLS */}
                 {days.map((day, dayIdx) => {
                   const shift = getShiftForCell(user._id, day);
                   const dateStr = day.toISOString().split('T')[0];
@@ -310,7 +300,6 @@ const ScheduleView = () => {
                       }`}
                     >
                       {isEditing ? (
-                        // ── EDITING STATE ──
                         <div className='flex flex-col gap-1 min-w-80px'>
                           <input
                             type='time'
@@ -349,7 +338,6 @@ const ScheduleView = () => {
                           </div>
                         </div>
                       ) : shift ? (
-                        // ── HAS SHIFT ──
                         <button
                           onClick={() => openEdit(user._id, day, shift)}
                           className={`w-full rounded-xl px-1.5 py-1.5 text-center transition-colors hover:opacity-80 ${
@@ -378,7 +366,6 @@ const ScheduleView = () => {
                           </span>
                         </button>
                       ) : (
-                        // ── EMPTY CELL ──
                         <button
                           onClick={() => openEdit(user._id, day)}
                           className='w-full h-12 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition-colors flex items-center justify-center'

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { CalendarDays } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import ShiftModal from './ShiftModal';
 
 const WeekView = ({ shifts, setShifts, startOfWeek, locale }: any) => {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const { t } = useTranslation();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -56,7 +58,7 @@ const WeekView = ({ shifts, setShifts, startOfWeek, locale }: any) => {
                   {dayLabel}
                   {isToday && (
                     <span className='ml-2 text-xs font-normal opacity-70'>
-                      Today
+                      {t('today')}
                     </span>
                   )}
                 </span>

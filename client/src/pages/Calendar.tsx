@@ -110,7 +110,7 @@ const Calendar = () => {
               }`}
             >
               <ClipboardList size={14} />
-              Attendance
+              {t('attendance')}
             </button>
           )}
           {isAdmin && (
@@ -122,7 +122,7 @@ const Calendar = () => {
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Schedule
+              {t('scheduleView')}
             </button>
           )}
           {isAdmin && (
@@ -134,7 +134,7 @@ const Calendar = () => {
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Summary
+              {t('summaryView')}
             </button>
           )}
         </div>
