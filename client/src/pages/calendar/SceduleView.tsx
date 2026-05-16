@@ -9,6 +9,7 @@ type View = 'week' | 'month';
 const ScheduleView = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
+  const [availability, setAvailability] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<View>('week');
   const [editingCell, setEditingCell] = useState<{
@@ -25,9 +26,9 @@ const ScheduleView = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
-
   useEffect(() => {
     fetchShifts();
+    fetchAvailability();
   }, [currentDate, view]);
 
   const fetchUsers = async () => {
@@ -41,6 +42,9 @@ const ScheduleView = () => {
     }
   };
 
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   const fetchShifts = async () => {
     try {
       const days = getDays();
@@ -52,6 +56,20 @@ const ScheduleView = () => {
       setShifts(res.data);
     } catch {
       toast.error(t('toastFailedLoadShifts'));
+    }
+  };
+
+  const fetchAvailability = async () => {
+    try {
+      const days = getDays();
+      const start = fmt(days[0]);
+      const end = fmt(days[days.length - 1]);
+      const res = await api.get(`/availability/all?start=${start}&end=${end}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAvailability(res.data);
+    } catch {
+      console.error('Failed to load availability');
     }
   };
 
@@ -96,9 +114,9 @@ const ScheduleView = () => {
   const rangeLabel = () => {
     if (view === 'week') {
       const days = getDays();
-      const fmt = (d: Date) =>
+      const fmtLabel = (d: Date) =>
         d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-      return `${fmt(days[0])} – ${fmt(days[6])}`;
+      return `${fmtLabel(days[0])} – ${fmtLabel(days[6])}`;
     } else {
       return currentDate.toLocaleString('de-DE', {
         month: 'long',
@@ -112,6 +130,15 @@ const ScheduleView = () => {
       const sDate = new Date(s.date);
       return (
         s.userId?._id === userId && sDate.toDateString() === date.toDateString()
+      );
+    });
+  };
+
+  const getAvailabilityForCell = (userId: string, date: Date) => {
+    return availability.find((a: any) => {
+      const aDate = new Date(a.date);
+      return (
+        a.userId?._id === userId && aDate.toDateString() === date.toDateString()
       );
     });
   };
@@ -141,7 +168,6 @@ const ScheduleView = () => {
           sDate.toDateString() === cellDate.toDateString()
         );
       });
-
       if (existing) {
         await api.patch(
           `/shifts/${existing._id}`,
@@ -194,37 +220,47 @@ const ScheduleView = () => {
         <div className='bg-slate-200 dark:bg-slate-800 rounded-full p-1 flex'>
           <button
             onClick={() => setView('week')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              view === 'week'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400'
-            }`}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${view === 'week' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
           >
             {t('week')}
           </button>
           <button
             onClick={() => setView('month')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              view === 'month'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400'
-            }`}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${view === 'month' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
           >
             {t('month')}
           </button>
         </div>
 
         <div className='flex items-center gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-full self-start sm:self-auto'>
-          <button onClick={prev} className='text-slate-600 dark:text-slate-300 p-0.5'>
+          <button
+            onClick={prev}
+            className='text-slate-600 dark:text-slate-300 p-0.5'
+          >
             <ChevronLeft size={16} />
           </button>
           <span className='text-sm font-medium text-slate-700 dark:text-slate-200 px-1'>
             {rangeLabel()}
           </span>
-          <button onClick={next} className='text-slate-600 dark:text-slate-300 p-0.5'>
+          <button
+            onClick={next}
+            className='text-slate-600 dark:text-slate-300 p-0.5'
+          >
             <ChevronRight size={16} />
           </button>
         </div>
+      </div>
+
+      {/* LEGEND */}
+      <div className='flex items-center gap-3 mb-3 px-1'>
+        <span className='flex items-center gap-1 text-xs text-slate-400'>
+          <span className='w-2 h-2 rounded-full bg-green-400 inline-block' />{' '}
+          Available
+        </span>
+        <span className='flex items-center gap-1 text-xs text-slate-400'>
+          <span className='w-2 h-2 rounded-full bg-red-400 inline-block' />{' '}
+          Unavailable
+        </span>
       </div>
 
       {/* TABLE */}
@@ -240,11 +276,7 @@ const ScheduleView = () => {
                 return (
                   <th
                     key={i}
-                    className={`px-2 py-2.5 text-center text-xs font-semibold min-w-80px ${
-                      isToday
-                        ? 'text-green-500'
-                        : 'text-slate-500 dark:text-slate-400'
-                    } ${i === days.length - 1 ? 'rounded-tr-2xl' : ''}`}
+                    className={`px-2 py-2.5 text-center text-xs font-semibold min-w-80px ${isToday ? 'text-green-500' : 'text-slate-500 dark:text-slate-400'} ${i === days.length - 1 ? 'rounded-tr-2xl' : ''}`}
                     style={{ background: 'rgb(226 232 240 / 0.6)' }}
                   >
                     <span className='block'>
@@ -277,7 +309,7 @@ const ScheduleView = () => {
                       {user.firstName?.[0]}
                       {user.lastName?.[0]}
                     </div>
-                    <span className='text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-60px'>
+                    <span className='text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-60px]'>
                       {user.firstName}
                     </span>
                   </div>
@@ -285,6 +317,7 @@ const ScheduleView = () => {
 
                 {days.map((day, dayIdx) => {
                   const shift = getShiftForCell(user._id, day);
+                  const avail = getAvailabilityForCell(user._id, day);
                   const dateStr = day.toISOString().split('T')[0];
                   const isEditing =
                     editingCell?.userId === user._id &&
@@ -295,12 +328,10 @@ const ScheduleView = () => {
                   return (
                     <td
                       key={dayIdx}
-                      className={`px-1.5 py-1.5 text-center align-middle border-l border-slate-100 dark:border-slate-800 ${
-                        isToday ? 'bg-green-50/50 dark:bg-green-900/10' : ''
-                      }`}
+                      className={`px-1.5 py-1.5 text-center align-middle border-l border-slate-100 dark:border-slate-800 ${isToday ? 'bg-green-50/50 dark:bg-green-900/10' : ''}`}
                     >
                       {isEditing ? (
-                        <div className='flex flex-col gap-1 min-w-80px'>
+                        <div className='flex flex-col gap-1 min-w-80px]'>
                           <input
                             type='time'
                             value={editStart}
@@ -340,39 +371,56 @@ const ScheduleView = () => {
                       ) : shift ? (
                         <button
                           onClick={() => openEdit(user._id, day, shift)}
-                          className={`w-full rounded-xl px-1.5 py-1.5 text-center transition-colors hover:opacity-80 ${
-                            isPast
-                              ? 'bg-slate-100 dark:bg-slate-800'
-                              : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                          }`}
+                          className={`w-full rounded-xl px-1.5 py-1.5 text-center transition-colors hover:opacity-80 ${isPast ? 'bg-slate-100 dark:bg-slate-800' : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'}`}
                         >
                           <span
-                            className={`text-xs font-semibold block ${
-                              isPast
-                                ? 'text-slate-400 dark:text-slate-500'
-                                : 'text-green-700 dark:text-green-400'
-                            }`}
+                            className={`text-xs font-semibold block ${isPast ? 'text-slate-400 dark:text-slate-500' : 'text-green-700 dark:text-green-400'}`}
                           >
                             {shift.startTime}
                           </span>
                           <span
-                            className={`text-xs block ${
-                              isPast
-                                ? 'text-slate-400 dark:text-slate-500'
-                                : 'text-green-600 dark:text-green-500'
-                            }`}
+                            className={`text-xs block ${isPast ? 'text-slate-400 dark:text-slate-500' : 'text-green-600 dark:text-green-500'}`}
                           >
                             {shift.endTime}
                           </span>
+                          {/* Availability indicator */}
+                          {avail && (
+                            <div
+                              className={`mt-0.5 text-[9px] font-medium rounded-full px-1 ${avail.type === 'available' ? 'text-green-600 bg-green-100 dark:bg-green-900/30' : 'text-red-500 bg-red-100 dark:bg-red-900/30'}`}
+                            >
+                              {avail.startTime}–{avail.endTime}
+                            </div>
+                          )}
                         </button>
                       ) : (
                         <button
                           onClick={() => openEdit(user._id, day)}
-                          className='w-full h-12 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition-colors flex items-center justify-center'
+                          className={`w-full h-12 rounded-xl border border-dashed hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition-colors flex flex-col items-center justify-center gap-0.5 ${
+                            avail
+                              ? avail.type === 'available'
+                                ? 'border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-900/10'
+                                : 'border-red-300 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10'
+                              : 'border-slate-200 dark:border-slate-700'
+                          }`}
                         >
-                          <span className='text-slate-300 dark:text-slate-700 text-lg leading-none'>
-                            +
-                          </span>
+                          {avail ? (
+                            <>
+                              <span
+                                className={`text-[9px] font-medium ${avail.type === 'available' ? 'text-green-500' : 'text-red-400'}`}
+                              >
+                                {avail.type === 'available' ? '✓' : '✗'}
+                              </span>
+                              <span
+                                className={`text-[9px] ${avail.type === 'available' ? 'text-green-500' : 'text-red-400'}`}
+                              >
+                                {avail.startTime}
+                              </span>
+                            </>
+                          ) : (
+                            <span className='text-slate-300 dark:text-slate-700 text-lg leading-none'>
+                              +
+                            </span>
+                          )}
                         </button>
                       )}
                     </td>

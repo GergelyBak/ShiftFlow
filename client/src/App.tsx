@@ -15,6 +15,7 @@ import { ToastContainer } from 'react-toastify';
 import Notifications from './pages/Notofication';
 import WorkingHours from './pages/profile/WorkingHours';
 import Absence from './pages/profile/Absence';
+import Account from './pages/profile/Account';
 const App = () => {
   return (
     <BrowserRouter>
@@ -40,6 +41,7 @@ const App = () => {
           <Route path='/calendar' element={<Calendar />} /> {/* ✅ FIX */}
           <Route path='/settings' element={<Settings />} /> {/* ✅ FIX */}
           <Route path='/absences' element={<Absence />} />
+          <Route path='/account' element={<Account />} />
           <Route path='/working-hours' element={<WorkingHours />} />
           <Route path='/create' element={<Create />} />
           <Route path='/notifications' element={<Notifications />} />
