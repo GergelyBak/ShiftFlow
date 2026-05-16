@@ -9,6 +9,7 @@ import { addNotification } from '../utils/notifications';
 const Dashboard = () => {
   const [shifts, setShifts] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
+  const [availability, setAvailability] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
@@ -17,11 +18,14 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const [shiftsRes, attendanceRes] = await Promise.all([
+        const [shiftsRes, attendanceRes, availabilityRes] = await Promise.all([
           api.get('/shifts/me', {
             headers: { Authorization: `Bearer ${token}` },
           }),
           api.get('/attendance/my', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          api.get('/availability/my', {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -35,6 +39,7 @@ const Dashboard = () => {
             (a: any) => a.status === 'approved' && a.checkOut,
           ),
         );
+        setAvailability(availabilityRes.data);
       } catch (error) {
         console.error(error);
       } finally {
@@ -72,6 +77,12 @@ const Dashboard = () => {
       const d = new Date(s.date);
       return d.toDateString() === date.toDateString();
     });
+  };
+
+  const getAvailabilityForDay = (date: Date) => {
+    return availability.find(
+      (a: any) => new Date(a.date).toDateString() === date.toDateString(),
+    );
   };
 
   const calcAttendanceHours = (record: any) => {
@@ -149,7 +160,9 @@ const Dashboard = () => {
     return (
       <div className='min-h-screen flex flex-col items-center justify-center gap-4'>
         <div className='w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-green-500 animate-spin' />
-        <p className='text-sm text-slate-400 dark:text-slate-500'>{t('loading')}</p>
+        <p className='text-sm text-slate-400 dark:text-slate-500'>
+          {t('loading')}
+        </p>
       </div>
     );
   }
@@ -169,6 +182,7 @@ const Dashboard = () => {
         <div className='grid grid-cols-5 gap-2'>
           {next5Days.map((day, i) => {
             const shift = getShiftForDay(day);
+            const avail = getAvailabilityForDay(day);
             const isToday = i === 0;
             return (
               <div
@@ -176,15 +190,35 @@ const Dashboard = () => {
                 className={`rounded-2xl p-2 flex flex-col items-center gap-1 ${
                   isToday
                     ? 'bg-slate-200 dark:bg-slate-700'
-                    : 'bg-white dark:bg-slate-900'
+                    : avail?.type === 'available'
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : avail?.type === 'unavailable'
+                        ? 'bg-red-100 dark:bg-red-900/30'
+                        : 'bg-white dark:bg-slate-900'
                 }`}
               >
-                <p className='text-xs text-slate-400'>
+                <p
+                  className={`text-xs ${
+                    avail?.type === 'available'
+                      ? 'text-green-600 dark:text-green-400'
+                      : avail?.type === 'unavailable'
+                        ? 'text-red-500 dark:text-red-400'
+                        : 'text-slate-400'
+                  }`}
+                >
                   {isToday
                     ? t('today')
                     : day.toLocaleDateString(locale, { weekday: 'short' })}
                 </p>
-                <p className='text-base font-bold text-slate-800 dark:text-white'>
+                <p
+                  className={`text-base font-bold ${
+                    avail?.type === 'available'
+                      ? 'text-green-700 dark:text-green-300'
+                      : avail?.type === 'unavailable'
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-slate-800 dark:text-white'
+                  }`}
+                >
                   {day.getDate()}
                 </p>
                 {shift ? (
@@ -273,7 +307,6 @@ const Dashboard = () => {
               <Clock size={14} className='text-slate-300' />
             </div>
           </div>
-
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             <p className='text-xs text-slate-400 mb-1'>{currentMonthName}</p>
             <p className='text-lg font-bold text-slate-900 dark:text-white'>
@@ -284,7 +317,6 @@ const Dashboard = () => {
               <Clock size={14} className='text-slate-300' />
             </div>
           </div>
-
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3'>
             <p className='text-xs text-slate-400 mb-1'>{lastMonthName}</p>
             <p className='text-lg font-bold text-slate-900 dark:text-white'>
@@ -303,7 +335,6 @@ const Dashboard = () => {
         <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 px-1'>
           {t('myShifts')}
         </p>
-
         {futureShifts.length === 0 ? (
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-6 text-center text-slate-400 text-sm'>
             {t('noShifts')}
