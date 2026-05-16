@@ -79,9 +79,6 @@ export const deleteAttendance = async (req: any, res: Response) => {
 // GET /api/attendance/summary
 export const getAttendanceSummary = async (req: any, res: Response) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
     const { start, end } = req.query;
     if (!start || !end) {
       return res.status(400).json({ message: 'start and end dates required' });
@@ -90,6 +87,10 @@ export const getAttendanceSummary = async (req: any, res: Response) => {
       start as string,
       end as string,
     );
+    if (req.user.role !== 'admin') {
+      const mine = data.filter((s: any) => s.user.id === req.user.id.toString());
+      return res.status(200).json(mine);
+    }
     res.status(200).json(data);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -138,12 +139,12 @@ export const createManualAttendance = async (req: any, res: Response) => {
 // GET /api/attendance/detail?userId=...&start=...&end=...
 export const getAttendanceDetail = async (req: any, res: Response) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
     const { userId, start, end } = req.query;
     if (!userId || !start || !end) {
       return res.status(400).json({ message: 'userId, start and end required' });
+    }
+    if (req.user.role !== 'admin' && userId !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Forbidden' });
     }
     const data = await attendanceService.getAttendanceDetail(
       userId as string,

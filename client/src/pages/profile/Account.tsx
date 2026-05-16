@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/axios';
 import { ChevronLeft, Plane, Check, Clock } from 'lucide-react';
 
@@ -7,6 +8,7 @@ const TOTAL_HOLIDAY_DAYS = 24;
 
 const Account = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [absences, setAbsences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +67,7 @@ const Account = () => {
           <ChevronLeft size={18} className='text-slate-600 dark:text-slate-300' />
         </button>
         <h1 className='text-xl font-semibold text-slate-900 dark:text-white'>
-          Holiday Account
+          {t('holidayAccount')}
         </h1>
       </div>
 
@@ -74,13 +76,13 @@ const Account = () => {
         <div className='flex items-center justify-between mb-4'>
           <div>
             <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1'>
-              {currentYear} Holiday Balance
+              {currentYear} {t('holidayBalance')}
             </p>
             <p className='text-3xl font-bold text-slate-900 dark:text-white'>
               {remainingDays}
               <span className='text-base font-normal text-slate-400 ml-1'>/ {TOTAL_HOLIDAY_DAYS} days</span>
             </p>
-            <p className='text-xs text-slate-400 mt-1'>remaining</p>
+            <p className='text-xs text-slate-400 mt-1'>{t('remaining')}</p>
           </div>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
             remainingDays > 5
@@ -112,11 +114,11 @@ const Account = () => {
         {/* Stats row */}
         <div className='grid grid-cols-3 gap-2 mt-4'>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3 text-center'>
-            <p className='text-xs text-slate-400 mb-1'>Total</p>
+            <p className='text-xs text-slate-400 mb-1'>{t('total')}</p>
             <p className='text-lg font-bold text-slate-800 dark:text-white'>{TOTAL_HOLIDAY_DAYS}</p>
           </div>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3 text-center'>
-            <p className='text-xs text-slate-400 mb-1'>Used</p>
+            <p className='text-xs text-slate-400 mb-1'>{t('approved')}</p>
             <p className='text-lg font-bold text-slate-800 dark:text-white'>{usedDays}</p>
           </div>
           <div className={`rounded-2xl p-3 text-center ${
@@ -124,7 +126,7 @@ const Account = () => {
             : remainingDays > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
             : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
           }`}>
-            <p className='text-xs text-slate-400 mb-1'>Left</p>
+            <p className='text-xs text-slate-400 mb-1'>{t('remaining')}</p>
             <p className={`text-lg font-bold ${
               remainingDays > 5 ? 'text-green-600 dark:text-green-400'
               : remainingDays > 0 ? 'text-amber-600 dark:text-amber-400'
@@ -137,17 +139,17 @@ const Account = () => {
       {/* APPROVED ABSENCES THIS YEAR */}
       <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
         <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-3 pt-2 pb-2'>
-          Used this year
+          {t('usedThisYear')}
         </p>
 
         {loading ? (
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-6 text-center text-slate-400 text-sm'>
-            Loading...
+            {t('loading')}
           </div>
         ) : approvedThisYear.length === 0 ? (
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-6 flex flex-col items-center gap-2'>
             <Clock size={28} className='text-slate-300' />
-            <p className='text-sm text-slate-400'>No approved absences yet</p>
+            <p className='text-sm text-slate-400'>{t('noApprovedAbsences')}</p>
           </div>
         ) : (
           <div className='space-y-1'>
