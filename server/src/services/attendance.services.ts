@@ -3,6 +3,13 @@ import Attendance from '../models/Attendance';
 import { isGermanHoliday } from '../utils/holidays';
 import { fromZonedTime } from 'date-fns-tz';
 
+export const calcAutoBreak = (workedHours: number): number => {
+  if (workedHours > 9) return 45;
+  if (workedHours > 6) return 30;
+  if (workedHours > 5) return 15;
+  return 0;
+};
+
 // Generate a unique 4-digit PIN
 export const generateUniquePin = async (): Promise<string> => {
   let pin: string;
@@ -68,12 +75,9 @@ export const checkOut = async (pin: string) => {
   const checkOutTime = new Date();
   attendance.checkOut = checkOutTime;
 
-  // Automatically apply 30-minute break if worked more than 7 hours
   const workedMs = checkOutTime.getTime() - attendance.checkIn.getTime();
   const workedHours = workedMs / 1000 / 60 / 60;
-  if (workedHours > 7 && (attendance.breakMinutes || 0) === 0) {
-    attendance.breakMinutes = 30;
-  }
+  attendance.breakMinutes = calcAutoBreak(workedHours);
 
   await attendance.save();
 

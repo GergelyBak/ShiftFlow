@@ -3,6 +3,7 @@ import * as attendanceService from '../services/attendance.services';
 import Attendance from '../models/Attendance';
 import { isGermanHoliday } from '../utils/holidays';
 import { fromZonedTime } from 'date-fns-tz';
+import { calcAutoBreak } from '../services/attendance.services';
 
 export const checkIn = async (req: Request, res: Response) => {
   try {
@@ -125,7 +126,11 @@ export const createManualAttendance = async (req: any, res: Response) => {
       checkOut,
       status: 'approved',
       isHoliday: holiday,
-      breakMinutes: breakMinutes || 0,
+      breakMinutes: breakMinutes != null
+        ? Number(breakMinutes)
+        : checkOut
+          ? calcAutoBreak((checkOut.getTime() - checkIn.getTime()) / 3600000)
+          : 0,
     });
 
     const populated = await Attendance.findById(attendance._id).populate(
