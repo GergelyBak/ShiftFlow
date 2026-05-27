@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as attendanceService from '../services/attendance.services';
 import Attendance from '../models/Attendance';
 import { isGermanHoliday } from '../utils/holidays';
+import { fromZonedTime } from 'date-fns-tz';
 
 export const checkIn = async (req: Request, res: Response) => {
   try {
@@ -111,9 +112,10 @@ export const createManualAttendance = async (req: any, res: Response) => {
         .json({ message: 'userId, date and checkInTime are required' });
     }
 
-    const checkIn = new Date(`${date}T${checkInTime}:00`);
+    const timezone = 'Europe/Berlin';
+    const checkIn = fromZonedTime(`${date}T${checkInTime}:00`, timezone);
     const checkOut = checkOutTime
-      ? new Date(`${date}T${checkOutTime}:00`)
+      ? fromZonedTime(`${date}T${checkOutTime}:00`, timezone)
       : undefined;
     const holiday = isGermanHoliday(checkIn);
 
