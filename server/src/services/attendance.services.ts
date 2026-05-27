@@ -65,7 +65,16 @@ export const checkOut = async (pin: string) => {
 
   if (!attendance) throw new Error('No active check-in found');
 
-  attendance.checkOut = new Date();
+  const checkOutTime = new Date();
+  attendance.checkOut = checkOutTime;
+
+  // Automatically apply 30-minute break if worked more than 7 hours
+  const workedMs = checkOutTime.getTime() - attendance.checkIn.getTime();
+  const workedHours = workedMs / 1000 / 60 / 60;
+  if (workedHours > 7 && (attendance.breakMinutes || 0) === 0) {
+    attendance.breakMinutes = 30;
+  }
+
   await attendance.save();
 
   return {
