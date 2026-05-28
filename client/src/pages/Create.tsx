@@ -526,8 +526,8 @@ const AbsenceForm = () => {
     <div className='space-y-4'>
       <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
         <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-5 space-y-4'>
-          <div className='grid grid-cols-2 gap-2'>
-            <div className='min-w-0'>
+          <div className='flex gap-2'>
+            <div className='flex-1 min-w-0 overflow-hidden'>
               <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('from')}
               </label>
@@ -535,10 +535,10 @@ const AbsenceForm = () => {
                 type='date'
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
-            <div className='min-w-0'>
+            <div className='flex-1 min-w-0 overflow-hidden'>
               <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('to')}
               </label>
@@ -546,7 +546,7 @@ const AbsenceForm = () => {
                 type='date'
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
           </div>

@@ -221,8 +221,8 @@ const Absence = () => {
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-2'>
-            <div className='min-w-0'>
+          <div className='flex gap-2'>
+            <div className='flex-1 min-w-0 overflow-hidden'>
               <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('from')} *
               </label>
@@ -230,10 +230,10 @@ const Absence = () => {
                 type='date'
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-2 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
-            <div className='min-w-0'>
+            <div className='flex-1 min-w-0 overflow-hidden'>
               <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
                 {t('to')} *
               </label>
@@ -241,7 +241,7 @@ const Absence = () => {
                 type='date'
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-2 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
               />
             </div>
           </div>
