@@ -221,29 +221,27 @@ const Absence = () => {
             </div>
           </div>
 
-          <div className='flex gap-2'>
-            <div className='flex-1 min-w-0 overflow-hidden'>
-              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                {t('from')} *
-              </label>
-              <input
-                type='date'
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-2 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
-              />
-            </div>
-            <div className='flex-1 min-w-0 overflow-hidden'>
-              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                {t('to')} *
-              </label>
-              <input
-                type='date'
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-2 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
-              />
-            </div>
+          <div className='flex items-center gap-2 bg-white dark:bg-slate-900 rounded-xl px-3 focus-within:ring-2 focus-within:ring-green-500'>
+            <span className='text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0'>
+              {t('from')} *
+            </span>
+            <input
+              type='date'
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className='flex-1 min-w-0 bg-transparent text-slate-900 dark:text-white py-2.5 text-sm outline-none'
+            />
+          </div>
+          <div className='flex items-center gap-2 bg-white dark:bg-slate-900 rounded-xl px-3 focus-within:ring-2 focus-within:ring-green-500'>
+            <span className='text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0'>
+              {t('to')} *
+            </span>
+            <input
+              type='date'
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className='flex-1 min-w-0 bg-transparent text-slate-900 dark:text-white py-2.5 text-sm outline-none'
+            />
           </div>
 
           <div>
