@@ -106,18 +106,23 @@ export const createManualAttendance = async (req: any, res: Response) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    const { userId, date, checkInTime, checkOutTime, breakMinutes } = req.body;
-    if (!userId || !date || !checkInTime) {
-      return res
-        .status(400)
-        .json({ message: 'userId, date and checkInTime are required' });
+    const { userId, date, checkInTime, checkOutTime, breakMinutes, type } = req.body;
+    const entryType: string = type || 'work';
+
+    if (!userId || !date) {
+      return res.status(400).json({ message: 'userId and date are required' });
+    }
+    if (entryType === 'work' && !checkInTime) {
+      return res.status(400).json({ message: 'checkInTime is required for work entries' });
     }
 
     const timezone = 'Europe/Berlin';
-    const checkIn = fromZonedTime(`${date}T${checkInTime}:00`, timezone);
-    const checkOut = checkOutTime
-      ? fromZonedTime(`${date}T${checkOutTime}:00`, timezone)
-      : undefined;
+    const checkIn = entryType === 'work'
+      ? fromZonedTime(`${date}T${checkInTime}:00`, timezone)
+      : fromZonedTime(`${date}T00:00:00`, timezone);
+    const checkOut = entryType === 'work'
+      ? (checkOutTime ? fromZonedTime(`${date}T${checkOutTime}:00`, timezone) : undefined)
+      : fromZonedTime(`${date}T23:59:59`, timezone);
     const holiday = isGermanHoliday(checkIn);
 
     const attendance = await Attendance.create({
@@ -126,11 +131,14 @@ export const createManualAttendance = async (req: any, res: Response) => {
       checkOut,
       status: 'approved',
       isHoliday: holiday,
-      breakMinutes: breakMinutes != null
-        ? Number(breakMinutes)
-        : checkOut
-          ? calcAutoBreak((checkOut.getTime() - checkIn.getTime()) / 3600000)
-          : 0,
+      type: entryType,
+      breakMinutes: entryType !== 'work'
+        ? 0
+        : breakMinutes != null
+          ? Number(breakMinutes)
+          : checkOut
+            ? calcAutoBreak((checkOut.getTime() - checkIn.getTime()) / 3600000)
+            : 0,
     });
 
     const populated = await Attendance.findById(attendance._id).populate(

@@ -5,6 +5,8 @@ export interface IAbsence extends Document {
   startDate: Date;
   endDate: Date;
   reason: string;
+  type: 'vacation' | 'sick' | 'personal';
+  hasCertificate: boolean;
   status: 'pending' | 'approved' | 'rejected';
 }
 
@@ -27,6 +29,15 @@ const absenceSchema = new mongoose.Schema<IAbsence>(
       type: String,
       required: true,
       trim: true,
+    },
+    type: {
+      type: String,
+      enum: ['vacation', 'sick', 'personal'],
+      default: 'vacation',
+    },
+    hasCertificate: {
+      type: Boolean,
+      default: false,
     },
     status: {
       type: String,

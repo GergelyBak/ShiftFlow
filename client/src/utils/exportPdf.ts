@@ -10,6 +10,8 @@ export const exportAttendancePdf = (
     holidayHours: number;
     totalHours: number;
     holidayBonus: number;
+    vacationDays?: number;
+    sickDays?: number;
   },
 ) => {
   const doc = new jsPDF();
@@ -67,15 +69,29 @@ export const exportAttendancePdf = (
   doc.setTextColor(100, 100, 100);
   doc.text(user.email, 14, 49);
 
+  const typeLabel = (type: string) => {
+    if (type === 'paid_vacation') return 'Paid Vacation';
+    if (type === 'sick_leave') return 'Sick Leave';
+    return '';
+  };
+
   // ── Table ─────────────────────────────────────────────────
-  const rows = records.map((r) => [
-    formatDate(r.checkIn),
-    formatTime(r.checkIn),
-    r.checkOut ? formatTime(r.checkOut) : '—',
-    r.breakMinutes > 0 ? `${r.breakMinutes}m` : '—',
-    formatHours(r.hours),
-    r.isHoliday ? '🎉 Holiday' : '—',
-  ]);
+  const rows = records.map((r) => {
+    const isAbsence = r.type === 'paid_vacation' || r.type === 'sick_leave';
+    const note = isAbsence
+      ? typeLabel(r.type)
+      : r.isHoliday
+        ? 'Holiday'
+        : '—';
+    return [
+      formatDate(r.date),
+      isAbsence ? '—' : (r.checkIn ? formatTime(r.checkIn) : '—'),
+      isAbsence ? '—' : (r.checkOut ? formatTime(r.checkOut) : '—'),
+      isAbsence ? '—' : (r.breakMinutes > 0 ? `${r.breakMinutes}m` : '—'),
+      formatHours(r.hours),
+      note,
+    ];
+  });
 
   autoTable(doc, {
     startY: 56,
@@ -108,16 +124,12 @@ export const exportAttendancePdf = (
   // ── Summary ───────────────────────────────────────────────
   const finalY = (doc as any).lastAutoTable.finalY + 10;
 
+  const hasBonus = summary.holidayBonus > 0;
+  const hasAbsences = (summary.vacationDays ?? 0) > 0 || (summary.sickDays ?? 0) > 0;
+  const boxHeight = 28 + (hasBonus ? 11 : 0) + (hasAbsences ? 11 : 0);
+
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(
-    14,
-    finalY,
-    182,
-    summary.holidayBonus > 0 ? 38 : 28,
-    3,
-    3,
-    'F',
-  );
+  doc.roundedRect(14, finalY, 182, boxHeight, 3, 3, 'F');
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
@@ -126,26 +138,30 @@ export const exportAttendancePdf = (
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
-  doc.text(
-    `Normal hours: ${formatHours(summary.normalHours)}`,
-    20,
-    finalY + 17,
-  );
-  doc.text(
-    `Holiday hours: ${formatHours(summary.holidayHours)}`,
-    80,
-    finalY + 17,
-  );
+  doc.text(`Normal hours: ${formatHours(summary.normalHours)}`, 20, finalY + 17);
+  doc.text(`Holiday hours: ${formatHours(summary.holidayHours)}`, 80, finalY + 17);
   doc.text(`Total hours: ${formatHours(summary.totalHours)}`, 150, finalY + 17);
 
-  if (summary.holidayBonus > 0) {
-    doc.setTextColor(217, 119, 6); // amber
+  let nextY = finalY + 17;
+
+  if (hasBonus) {
+    nextY += 11;
+    doc.setTextColor(217, 119, 6);
     doc.setFont('helvetica', 'bold');
-    doc.text(
-      `Holiday bonus (+50%): +${formatHours(summary.holidayBonus)}`,
-      20,
-      finalY + 28,
-    );
+    doc.text(`Holiday bonus (+50%): +${formatHours(summary.holidayBonus)}`, 20, nextY);
+  }
+
+  if (hasAbsences) {
+    nextY += 11;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    if ((summary.vacationDays ?? 0) > 0) {
+      doc.text(`Paid Vacation: ${summary.vacationDays} day(s) (${formatHours((summary.vacationDays ?? 0) * 8)})`, 20, nextY);
+    }
+    if ((summary.sickDays ?? 0) > 0) {
+      const col = (summary.vacationDays ?? 0) > 0 ? 110 : 20;
+      doc.text(`Sick Leave: ${summary.sickDays} day(s) (${formatHours((summary.sickDays ?? 0) * 8)})`, col, nextY);
+    }
   }
 
   // ── Footer ────────────────────────────────────────────────

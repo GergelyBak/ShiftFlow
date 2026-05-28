@@ -2,8 +2,20 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/axios';
-import { ChevronLeft, Plus, X, Trash2, Check, Clock } from 'lucide-react';
+import { ChevronLeft, Plus, X, Trash2, Check, Clock, FileCheck } from 'lucide-react';
 import { toast } from 'react-toastify';
+
+const TYPE_LABELS: Record<string, string> = {
+  vacation: 'Urlaub',
+  sick: 'Krank',
+  personal: 'Persönlich',
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  vacation: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+  sick: 'bg-red-500/10 border-red-500/30 text-red-400',
+  personal: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+};
 
 const Absence = () => {
   const navigate = useNavigate();
@@ -14,6 +26,8 @@ const Absence = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [type, setType] = useState<'vacation' | 'sick' | 'personal'>('vacation');
+  const [hasCertificate, setHasCertificate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const token = localStorage.getItem('token');
@@ -38,6 +52,15 @@ const Absence = () => {
     }
   };
 
+  const resetForm = () => {
+    setStartDate('');
+    setEndDate('');
+    setReason('');
+    setType('vacation');
+    setHasCertificate(false);
+    setShowForm(false);
+  };
+
   const handleSubmit = async () => {
     if (!startDate || !endDate || !reason) {
       toast.error(t('fillRequired'));
@@ -51,15 +74,12 @@ const Absence = () => {
     try {
       const res = await api.post(
         '/absences',
-        { startDate, endDate, reason },
+        { startDate, endDate, reason, type, hasCertificate },
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setAbsences((prev) => [res.data, ...prev]);
       toast.success(t('absenceSubmitted'));
-      setShowForm(false);
-      setStartDate('');
-      setEndDate('');
-      setReason('');
+      resetForm();
     } catch {
       toast.error(t('toastFailedSubmit'));
     } finally {
@@ -143,6 +163,12 @@ const Absence = () => {
     );
   };
 
+  const typeBadge = (absenceType: string) => (
+    <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${TYPE_COLORS[absenceType] || TYPE_COLORS.vacation}`}>
+      {TYPE_LABELS[absenceType] || absenceType}
+    </span>
+  );
+
   return (
     <div className='pb-24'>
       {/* HEADER */}
@@ -170,6 +196,31 @@ const Absence = () => {
       {/* FORM */}
       {showForm && (
         <div className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl p-4 space-y-3 mb-3'>
+          {/* Type selector */}
+          <div>
+            <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+              Typ *
+            </label>
+            <div className='grid grid-cols-3 gap-2'>
+              {(['vacation', 'sick', 'personal'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setType(t);
+                    if (t !== 'sick') setHasCertificate(false);
+                  }}
+                  className={`py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                    type === t
+                      ? TYPE_COLORS[t] + ' ring-1 ring-inset ring-current'
+                      : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-500'
+                  }`}
+                >
+                  {TYPE_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className='grid grid-cols-2 gap-2'>
             <div>
               <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
@@ -203,10 +254,32 @@ const Absence = () => {
               type='text'
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder='e.g. Urlaub, Krankheit...'
+              placeholder='Grund der Abwesenheit...'
               className='w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
             />
           </div>
+
+          {/* Certificate checkbox — only for sick */}
+          {type === 'sick' && (
+            <label className='flex items-center gap-3 cursor-pointer select-none'>
+              <div
+                onClick={() => setHasCertificate(!hasCertificate)}
+                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                  hasCertificate
+                    ? 'bg-green-500 border-green-500'
+                    : 'border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-900'
+                }`}
+              >
+                {hasCertificate && <Check size={12} className='text-white' />}
+              </div>
+              <div>
+                <p className='text-sm font-medium text-slate-800 dark:text-white'>
+                  Ärztliches Attest vorhanden
+                </p>
+                <p className='text-xs text-slate-400'>Krankschreibung liegt vor</p>
+              </div>
+            </label>
+          )}
 
           <button
             onClick={handleSubmit}
@@ -249,6 +322,19 @@ const Absence = () => {
 
               <div className='flex items-start justify-between gap-3'>
                 <div className='min-w-0'>
+                  <div className='flex items-center gap-2 mb-1 flex-wrap'>
+                    {typeBadge(absence.type || 'vacation')}
+                    {absence.type === 'sick' && absence.hasCertificate && (
+                      <span className='flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-500 text-xs font-semibold'>
+                        <FileCheck size={11} /> Attest
+                      </span>
+                    )}
+                    {absence.type === 'sick' && !absence.hasCertificate && (
+                      <span className='flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-500/10 border border-slate-500/30 text-slate-400 text-xs'>
+                        Kein Attest
+                      </span>
+                    )}
+                  </div>
                   <p className='text-sm font-semibold text-slate-800 dark:text-white'>
                     {formatDate(absence.startDate)}
                     {absence.startDate !== absence.endDate &&

@@ -242,6 +242,31 @@ const SummaryView = () => {
                   </span>
                 </div>
               )}
+
+              {(s.vacationDays > 0 || s.sickDays > 0) && (
+                <div className='mt-2 grid grid-cols-2 gap-2'>
+                  {s.vacationDays > 0 && (
+                    <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2 flex items-center justify-between'>
+                      <span className='text-xs text-blue-600 dark:text-blue-400 font-medium'>
+                        {t('typePaidVacation')}
+                      </span>
+                      <span className='text-xs font-bold text-blue-600 dark:text-blue-400'>
+                        {s.vacationDays}d
+                      </span>
+                    </div>
+                  )}
+                  {s.sickDays > 0 && (
+                    <div className='bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl px-3 py-2 flex items-center justify-between'>
+                      <span className='text-xs text-orange-600 dark:text-orange-400 font-medium'>
+                        {t('typeSickLeave')}
+                      </span>
+                      <span className='text-xs font-bold text-orange-600 dark:text-orange-400'>
+                        {s.sickDays}d
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -16,6 +16,7 @@ const AttendanceView = () => {
   const [checkInTime, setCheckInTime] = useState('');
   const [checkOutTime, setCheckOutTime] = useState('');
   const [breakMinutes, setBreakMinutes] = useState('0');
+  const [entryType, setEntryType] = useState('work');
   const [submitting, setSubmitting] = useState(false);
 
   const token = localStorage.getItem('token');
@@ -79,7 +80,7 @@ const AttendanceView = () => {
   };
 
   const handleManualAdd = async () => {
-    if (!selectedUserId || !date || !checkInTime) {
+    if (!selectedUserId || !date || (entryType === 'work' && !checkInTime)) {
       toast.error(t('fillRequired'));
       return;
     }
@@ -90,9 +91,10 @@ const AttendanceView = () => {
         {
           userId: selectedUserId,
           date,
-          checkInTime,
-          checkOutTime: checkOutTime || undefined,
-          breakMinutes: parseInt(breakMinutes) || 0,
+          checkInTime: entryType === 'work' ? checkInTime : undefined,
+          checkOutTime: entryType === 'work' ? (checkOutTime || undefined) : undefined,
+          breakMinutes: entryType === 'work' ? (parseInt(breakMinutes) || 0) : 0,
+          type: entryType,
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -103,6 +105,7 @@ const AttendanceView = () => {
       setCheckInTime('');
       setCheckOutTime('');
       setBreakMinutes('0');
+      setEntryType('work');
     } catch {
       toast.error(t('toastFailedAdd'));
     } finally {
@@ -180,6 +183,21 @@ const AttendanceView = () => {
 
           <div>
             <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+              {t('attendanceType')}
+            </label>
+            <select
+              value={entryType}
+              onChange={(e) => setEntryType(e.target.value)}
+              className='w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+            >
+              <option value='work'>{t('typeWork')}</option>
+              <option value='paid_vacation'>{t('typePaidVacation')}</option>
+              <option value='sick_leave'>{t('typeSickLeave')}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
               {t('dateRequired')}
             </label>
             <input
@@ -190,44 +208,48 @@ const AttendanceView = () => {
             />
           </div>
 
-          <div className='grid grid-cols-2 gap-2'>
-            <div>
-              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                {t('checkInRequired')}
-              </label>
-              <input
-                type='time'
-                value={checkInTime}
-                onChange={(e) => setCheckInTime(e.target.value)}
-                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
-              />
-            </div>
-            <div>
-              <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-                {t('checkOutLabel2')}
-              </label>
-              <input
-                type='time'
-                value={checkOutTime}
-                onChange={(e) => setCheckOutTime(e.target.value)}
-                className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
-              />
-            </div>
-          </div>
+          {entryType === 'work' && (
+            <>
+              <div className='grid grid-cols-2 gap-2'>
+                <div>
+                  <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+                    {t('checkInRequired')}
+                  </label>
+                  <input
+                    type='time'
+                    value={checkInTime}
+                    onChange={(e) => setCheckInTime(e.target.value)}
+                    className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                  />
+                </div>
+                <div>
+                  <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+                    {t('checkOutLabel2')}
+                  </label>
+                  <input
+                    type='time'
+                    value={checkOutTime}
+                    onChange={(e) => setCheckOutTime(e.target.value)}
+                    className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
-              {t('breakMinutes')}
-            </label>
-            <input
-              type='number'
-              min='0'
-              value={breakMinutes}
-              onChange={(e) => setBreakMinutes(e.target.value)}
-              className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
-              placeholder='0'
-            />
-          </div>
+              <div>
+                <label className='text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block'>
+                  {t('breakMinutes')}
+                </label>
+                <input
+                  type='number'
+                  min='0'
+                  value={breakMinutes}
+                  onChange={(e) => setBreakMinutes(e.target.value)}
+                  className='w-full min-w-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500'
+                  placeholder='0'
+                />
+              </div>
+            </>
+          )}
 
           <button
             onClick={handleManualAdd}
@@ -272,30 +294,56 @@ const AttendanceView = () => {
                   <p className='text-xs text-slate-400'>
                     {formatDate(record.checkIn)}
                   </p>
-                  <p className='text-xs font-mono text-slate-500 dark:text-slate-400 sm:hidden'>
-                    {formatTime(record.checkIn)} —{' '}
-                    {record.checkOut ? formatTime(record.checkOut) : '?'}
-                  </p>
+                  {record.type === 'paid_vacation' || record.type === 'sick_leave' ? (
+                    <span
+                      className={`sm:hidden inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        record.type === 'paid_vacation'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                      }`}
+                    >
+                      {record.type === 'paid_vacation' ? t('typePaidVacation') : t('typeSickLeave')}
+                    </span>
+                  ) : (
+                    <p className='text-xs font-mono text-slate-500 dark:text-slate-400 sm:hidden'>
+                      {formatTime(record.checkIn)} —{' '}
+                      {record.checkOut ? formatTime(record.checkOut) : '?'}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className='text-center hidden sm:block'>
-                <p className='text-xs font-mono text-slate-700 dark:text-slate-200'>
-                  {formatTime(record.checkIn)} —{' '}
-                  {record.checkOut ? formatTime(record.checkOut) : '?'}
-                </p>
-                <p className='text-xs text-slate-400'>
-                  {calcDuration(
-                    record.checkIn,
-                    record.checkOut,
-                    record.breakMinutes,
-                  )}
-                  {record.breakMinutes > 0 && (
-                    <span className='ml-1 text-slate-300'>
-                      ({record.breakMinutes}m break)
-                    </span>
-                  )}
-                </p>
+                {record.type === 'paid_vacation' || record.type === 'sick_leave' ? (
+                  <span
+                    className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      record.type === 'paid_vacation'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                    }`}
+                  >
+                    {record.type === 'paid_vacation' ? t('typePaidVacation') : t('typeSickLeave')}
+                  </span>
+                ) : (
+                  <>
+                    <p className='text-xs font-mono text-slate-700 dark:text-slate-200'>
+                      {formatTime(record.checkIn)} —{' '}
+                      {record.checkOut ? formatTime(record.checkOut) : '?'}
+                    </p>
+                    <p className='text-xs text-slate-400'>
+                      {calcDuration(
+                        record.checkIn,
+                        record.checkOut,
+                        record.breakMinutes,
+                      )}
+                      {record.breakMinutes > 0 && (
+                        <span className='ml-1 text-slate-300'>
+                          ({record.breakMinutes}m break)
+                        </span>
+                      )}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className='flex items-center gap-2 shrink-0'>

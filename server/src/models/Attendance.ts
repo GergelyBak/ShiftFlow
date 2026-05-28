@@ -7,6 +7,7 @@ export interface IAttendance extends Document {
   status: 'pending' | 'approved';
   isHoliday: boolean;
   breakMinutes: number;
+  type: 'work' | 'paid_vacation' | 'sick_leave';
 }
 
 const attendanceSchema = new mongoose.Schema<IAttendance>(
@@ -35,6 +36,11 @@ const attendanceSchema = new mongoose.Schema<IAttendance>(
     breakMinutes: {
       type: Number,
       default: 0,
+    },
+    type: {
+      type: String,
+      enum: ['work', 'paid_vacation', 'sick_leave'],
+      default: 'work',
     },
   },
   {

@@ -100,6 +100,10 @@ i18n.use(initReactI18next).init({
         approved: 'Approved',
         saveAttendance: 'Save Attendance',
         noAttendanceRecords: 'No attendance records yet',
+        attendanceType: 'Type',
+        typeWork: 'Work',
+        typePaidVacation: 'Paid Vacation',
+        typeSickLeave: 'Sick Leave',
 
         // Absence
         absence: 'Absence',
@@ -310,6 +314,10 @@ i18n.use(initReactI18next).init({
         approved: 'Genehmigt',
         saveAttendance: 'Anwesenheit speichern',
         noAttendanceRecords: 'Noch keine Anwesenheitseinträge',
+        attendanceType: 'Typ',
+        typeWork: 'Arbeit',
+        typePaidVacation: 'Bezahlter Urlaub',
+        typeSickLeave: 'Krankmeldung',
 
         // Absence
         absence: 'Abwesenheit',

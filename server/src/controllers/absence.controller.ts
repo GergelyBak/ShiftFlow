@@ -4,7 +4,7 @@ import Absence from '../models/Absence';
 // POST /api/absences — employee kér szabadságot
 export const createAbsence = async (req: any, res: Response) => {
   try {
-    const { startDate, endDate, reason } = req.body;
+    const { startDate, endDate, reason, type, hasCertificate } = req.body;
     if (!startDate || !endDate || !reason) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -14,6 +14,8 @@ export const createAbsence = async (req: any, res: Response) => {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       reason,
+      type: type || 'vacation',
+      hasCertificate: type === 'sick' ? !!hasCertificate : false,
     });
 
     res.status(201).json(absence);

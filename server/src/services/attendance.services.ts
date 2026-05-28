@@ -122,7 +122,6 @@ export const getAttendanceSummary = async (start: string, end: string) => {
   const records = await Attendance.find({
     checkIn: { $gte: startDate, $lte: endDate },
     status: 'approved',
-    checkOut: { $exists: true },
   }).populate('userId', 'firstName lastName email');
 
   const summary: Record<string, any> = {};
@@ -142,13 +141,24 @@ export const getAttendanceSummary = async (start: string, end: string) => {
         normalHours: 0,
         holidayHours: 0,
         totalHours: 0,
+        vacationDays: 0,
+        sickDays: 0,
       };
     }
 
-    const diff =
-      new Date(record.checkOut!).getTime() - new Date(record.checkIn).getTime();
-    const breakMs = (record.breakMinutes || 0) * 60 * 1000;
-    const hours = (diff - breakMs) / 1000 / 60 / 60;
+    const entryType = (record as any).type || 'work';
+
+    let hours: number;
+    if (entryType === 'paid_vacation' || entryType === 'sick_leave') {
+      hours = 8;
+      if (entryType === 'paid_vacation') summary[userId].vacationDays += 1;
+      else summary[userId].sickDays += 1;
+    } else {
+      if (!record.checkOut) continue;
+      const diff = new Date(record.checkOut).getTime() - new Date(record.checkIn).getTime();
+      const breakMs = (record.breakMinutes || 0) * 60 * 1000;
+      hours = (diff - breakMs) / 1000 / 60 / 60;
+    }
 
     if (record.isHoliday) {
       summary[userId].holidayHours += hours;
@@ -163,8 +173,8 @@ export const getAttendanceSummary = async (start: string, end: string) => {
     ...s,
     normalHours: Math.round(s.normalHours * 100) / 100,
     holidayHours: Math.round(s.holidayHours * 100) / 100,
-    totalHours: Math.round(s.totalHours * 100) / 100,
     holidayBonus: Math.round(s.holidayHours * 0.5 * 100) / 100,
+    totalHours: Math.round((s.totalHours + s.holidayHours * 0.5) * 100) / 100,
   }));
 };
 // Get detailed attendance for one user (admin)
@@ -181,23 +191,28 @@ export const getAttendanceDetail = async (
     userId,
     checkIn: { $gte: startDate, $lte: endDate },
     status: 'approved',
-    checkOut: { $exists: true },
   })
     .populate('userId', 'firstName lastName email')
     .sort({ checkIn: 1 });
 
   return records.map((r) => {
-    const diff =
-      new Date(r.checkOut!).getTime() - new Date(r.checkIn).getTime();
-    const breakMs = (r.breakMinutes || 0) * 60 * 1000;
-    const hours = (diff - breakMs) / 1000 / 60 / 60;
+    const entryType = (r as any).type || 'work';
+    const isAbsence = entryType === 'paid_vacation' || entryType === 'sick_leave';
+
+    const hours = isAbsence
+      ? 8
+      : r.checkOut
+        ? (new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime() - (r.breakMinutes || 0) * 60 * 1000) / 1000 / 60 / 60
+        : 0;
+
     return {
       date: r.checkIn,
-      checkIn: r.checkIn,
-      checkOut: r.checkOut,
-      breakMinutes: r.breakMinutes || 0,
+      checkIn: isAbsence ? null : r.checkIn,
+      checkOut: isAbsence ? null : r.checkOut,
+      breakMinutes: isAbsence ? 0 : (r.breakMinutes || 0),
       hours: Math.round(hours * 100) / 100,
       isHoliday: r.isHoliday,
+      type: entryType,
     };
   });
 };

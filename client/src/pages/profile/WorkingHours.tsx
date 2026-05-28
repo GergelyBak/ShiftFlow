@@ -118,9 +118,7 @@ const WorkingHours = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const totalWithBonus = summary
-    ? Math.round((summary.totalHours + summary.holidayBonus) * 100) / 100
-    : 0;
+  const totalWithBonus = summary ? summary.totalHours : 0;
 
   return (
     <div className='pb-24'>
