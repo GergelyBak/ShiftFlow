@@ -15,7 +15,7 @@ const Navbar = () => {
   
 
   return (
-    <div className='fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-xl px-6 py-3 rounded-full flex gap-6 shadow-lg'>
+    <div className='fixed bottom-7 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-xl px-8 py-4 rounded-full flex gap-7 shadow-lg'>
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path;
@@ -28,7 +28,7 @@ const Navbar = () => {
               isActive ? 'text-green-400 scale-110' : 'text-gray-400'
             }`}
           >
-            <Icon size={22} strokeWidth={2} />
+            <Icon size={24} strokeWidth={2} />
           </button>
         );
       })}
