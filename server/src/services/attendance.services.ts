@@ -193,8 +193,7 @@ export const getAttendanceSummary = async (start: string, end: string) => {
 
     let expectedHours: number | null = null;
     if (s.user.employeeType === 'minijob' && s.user.hourlyRate) {
-      const monthlyMaxHours = MINIJOB_MONTHLY_LIMIT / s.user.hourlyRate;
-      expectedHours = Math.round(monthlyMaxHours * (calendarDays / 30) * 100) / 100;
+      expectedHours = Math.round((MINIJOB_MONTHLY_LIMIT / s.user.hourlyRate) * 100) / 100;
     } else if (s.user.weeklyHourLimit != null) {
       expectedHours = Math.round((workdays / 5) * s.user.weeklyHourLimit * 100) / 100;
     }
