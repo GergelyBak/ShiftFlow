@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/axios';
-import { ChevronLeft, ChevronRight, Clock, Star, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Star, Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { exportAttendancePdf } from '../../utils/exportPdf';
 
@@ -12,6 +12,7 @@ const WorkingHours = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [summary, setSummary] = useState<any | null>(null);
+  const [totalOvertime, setTotalOvertime] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -23,6 +24,13 @@ const WorkingHours = () => {
   useEffect(() => {
     fetchSummary();
   }, [currentDate, view]);
+
+  useEffect(() => {
+    api
+      .get('/attendance/my-overtime', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => setTotalOvertime(res.data.totalOvertime))
+      .catch(() => {});
+  }, []);
 
   const fmt = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -77,7 +85,10 @@ const WorkingHours = () => {
         view === 'month'
           ? currentDate.toLocaleString('de-DE', { month: 'long', year: 'numeric' })
           : rangeLabel();
-      exportAttendancePdf(summary.user, res.data, label, summary);
+      exportAttendancePdf(summary.user, res.data, label, {
+        ...summary,
+        overtimeBalance: totalOvertime,
+      });
       toast.success(t('toastPdfExported'));
     } catch {
       toast.error(t('toastFailedPdf'));
@@ -133,6 +144,28 @@ const WorkingHours = () => {
         <h1 className='text-xl font-semibold text-slate-900 dark:text-white'>
           {t('workingHours')}
         </h1>
+      </div>
+
+      {/* NAME + TOTAL OVERTIME */}
+      <div className='bg-slate-200/60 dark:bg-slate-800 rounded-2xl p-4 flex items-center justify-between mb-4'>
+        <div className='flex items-center gap-3'>
+          <div className='w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-sm font-bold text-white shrink-0'>
+            {user.firstName?.[0]}{user.lastName?.[0]}
+          </div>
+          <p className='text-sm font-semibold text-slate-800 dark:text-white'>
+            {user.firstName} {user.lastName}
+          </p>
+        </div>
+        {totalOvertime != null && (
+          <div className='text-right'>
+            <p className='text-xs text-slate-400 mb-0.5'>{t('overtime')} {t('total')}</p>
+            <p className={`text-lg font-bold ${
+              totalOvertime >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+            }`}>
+              {totalOvertime >= 0 ? '+' : ''}{formatHours(Math.abs(totalOvertime))}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* NAV */}
@@ -244,6 +277,42 @@ const WorkingHours = () => {
               </div>
             </div>
           </div>
+
+          {/* OVERTIME */}
+          {summary.overtime != null && (
+            <div className={`rounded-2xl p-4 flex items-center justify-between border ${
+              summary.overtime >= 0
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+            }`}>
+              <div className='flex items-center gap-3'>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  summary.overtime >= 0
+                    ? 'bg-green-500/10'
+                    : 'bg-red-500/10'
+                }`}>
+                  {summary.overtime >= 0
+                    ? <TrendingUp size={20} className='text-green-500' />
+                    : <TrendingDown size={20} className='text-red-500' />}
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${
+                    summary.overtime >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {t('overtime')}
+                  </p>
+                  <p className='text-xs text-slate-400'>
+                    {t('expected')}: {formatHours(summary.expectedHours)}
+                  </p>
+                </div>
+              </div>
+              <p className={`text-xl font-bold ${
+                summary.overtime >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+              }`}>
+                {summary.overtime >= 0 ? '+' : ''}{formatHours(Math.abs(summary.overtime))}
+              </p>
+            </div>
+          )}
 
           {/* EXPORT PDF */}
           <button

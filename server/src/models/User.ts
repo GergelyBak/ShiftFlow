@@ -9,6 +9,9 @@ export interface IUser extends Document {
   pin: string;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  employeeType?: string;
+  hourlyRate?: number;
+  weeklyHourLimit?: number | null;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -46,6 +49,9 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
+    employeeType: { type: String },
+    hourlyRate: { type: Number },
+    weeklyHourLimit: { type: Number, default: null },
   },
   {
     timestamps: true,

@@ -104,6 +104,7 @@ i18n.use(initReactI18next).init({
         typeWork: 'Work',
         typePaidVacation: 'Paid Vacation',
         typeSickLeave: 'Sick Leave',
+        typeTimeOff: 'Time Off (Overtime)',
 
         // Absence
         absence: 'Absence',
@@ -150,6 +151,8 @@ i18n.use(initReactI18next).init({
         holiday: 'Holiday',
         total: 'Total',
         holidayBonus: 'Holiday bonus (+50%)',
+        overtime: 'Overtime',
+        expected: 'Expected',
         noApprovedRecords: 'No approved records for this period',
         exporting: 'Exporting...',
         pdf: 'PDF',
@@ -318,6 +321,7 @@ i18n.use(initReactI18next).init({
         typeWork: 'Arbeit',
         typePaidVacation: 'Bezahlter Urlaub',
         typeSickLeave: 'Krankmeldung',
+        typeTimeOff: 'Freizeitausgleich',
 
         // Absence
         absence: 'Abwesenheit',
@@ -364,6 +368,8 @@ i18n.use(initReactI18next).init({
         holiday: 'Feiertag',
         total: 'Gesamt',
         holidayBonus: 'Feiertagszuschlag (+50%)',
+        overtime: 'Überstunden',
+        expected: 'Soll',
         noApprovedRecords: 'Keine genehmigten Einträge für diesen Zeitraum',
         exporting: 'Wird exportiert...',
         pdf: 'PDF',

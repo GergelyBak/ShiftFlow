@@ -193,6 +193,7 @@ const AttendanceView = () => {
               <option value='work'>{t('typeWork')}</option>
               <option value='paid_vacation'>{t('typePaidVacation')}</option>
               <option value='sick_leave'>{t('typeSickLeave')}</option>
+              <option value='time_off'>{t('typeTimeOff')}</option>
             </select>
           </div>
 
@@ -294,15 +295,17 @@ const AttendanceView = () => {
                   <p className='text-xs text-slate-400'>
                     {formatDate(record.checkIn)}
                   </p>
-                  {record.type === 'paid_vacation' || record.type === 'sick_leave' ? (
+                  {(record.type === 'paid_vacation' || record.type === 'sick_leave' || record.type === 'time_off') ? (
                     <span
                       className={`sm:hidden inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                         record.type === 'paid_vacation'
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                          : record.type === 'sick_leave'
+                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                          : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                       }`}
                     >
-                      {record.type === 'paid_vacation' ? t('typePaidVacation') : t('typeSickLeave')}
+                      {record.type === 'paid_vacation' ? t('typePaidVacation') : record.type === 'sick_leave' ? t('typeSickLeave') : t('typeTimeOff')}
                     </span>
                   ) : (
                     <p className='text-xs font-mono text-slate-500 dark:text-slate-400 sm:hidden'>
@@ -314,15 +317,17 @@ const AttendanceView = () => {
               </div>
 
               <div className='text-center hidden sm:block'>
-                {record.type === 'paid_vacation' || record.type === 'sick_leave' ? (
+                {(record.type === 'paid_vacation' || record.type === 'sick_leave' || record.type === 'time_off') ? (
                   <span
                     className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${
                       record.type === 'paid_vacation'
                         ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                        : record.type === 'sick_leave'
+                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                        : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                     }`}
                   >
-                    {record.type === 'paid_vacation' ? t('typePaidVacation') : t('typeSickLeave')}
+                    {record.type === 'paid_vacation' ? t('typePaidVacation') : record.type === 'sick_leave' ? t('typeSickLeave') : t('typeTimeOff')}
                   </span>
                 ) : (
                   <>

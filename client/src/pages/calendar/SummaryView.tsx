@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
-import { ChevronLeft, ChevronRight, Clock, Star, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Star, Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { exportAttendancePdf } from '../../utils/exportPdf';
@@ -61,15 +61,22 @@ const SummaryView = () => {
     setExportingId(s.user.id);
     try {
       const { start, end } = getRange();
-      const res = await api.get(
-        `/attendance/detail?userId=${s.user.id}&start=${start}&end=${end}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const [detailRes, balanceRes] = await Promise.all([
+        api.get(`/attendance/detail?userId=${s.user.id}&start=${start}&end=${end}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        api.get(`/attendance/overtime-total?userId=${s.user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
       const monthLabel = currentDate.toLocaleString('de-DE', {
         month: 'long',
         year: 'numeric',
       });
-      exportAttendancePdf(s.user, res.data, monthLabel, s);
+      exportAttendancePdf(s.user, detailRes.data, monthLabel, {
+        ...s,
+        overtimeBalance: balanceRes.data.totalOvertime,
+      });
       toast.success(t('toastPdfExported'));
     } catch {
       toast.error(t('toastFailedPdf'));
@@ -232,6 +239,28 @@ const SummaryView = () => {
                 </div>
               </div>
 
+              {s.overtime != null && (
+                <div className={`mt-2 rounded-xl px-3 py-2 flex items-center justify-between border ${
+                  s.overtime >= 0
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                }`}>
+                  <span className={`text-xs font-medium flex items-center gap-1 ${
+                    s.overtime >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+                  }`}>
+                    {s.overtime >= 0
+                      ? <TrendingUp size={12} />
+                      : <TrendingDown size={12} />}
+                    {t('overtime')} ({t('expected')}: {formatHours(s.expectedHours)})
+                  </span>
+                  <span className={`text-xs font-bold ${
+                    s.overtime >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+                  }`}>
+                    {s.overtime >= 0 ? '+' : ''}{formatHours(Math.abs(s.overtime))}
+                  </span>
+                </div>
+              )}
+
               {s.holidayBonus > 0 && (
                 <div className='mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 flex items-center justify-between'>
                   <span className='text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1'>
@@ -243,8 +272,8 @@ const SummaryView = () => {
                 </div>
               )}
 
-              {(s.vacationDays > 0 || s.sickDays > 0) && (
-                <div className='mt-2 grid grid-cols-2 gap-2'>
+              {(s.vacationDays > 0 || s.sickDays > 0 || s.timeOffDays > 0) && (
+                <div className='mt-2 grid grid-cols-3 gap-2'>
                   {s.vacationDays > 0 && (
                     <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2 flex items-center justify-between'>
                       <span className='text-xs text-blue-600 dark:text-blue-400 font-medium'>
@@ -262,6 +291,16 @@ const SummaryView = () => {
                       </span>
                       <span className='text-xs font-bold text-orange-600 dark:text-orange-400'>
                         {s.sickDays}d
+                      </span>
+                    </div>
+                  )}
+                  {s.timeOffDays > 0 && (
+                    <div className='bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl px-3 py-2 flex items-center justify-between'>
+                      <span className='text-xs text-purple-600 dark:text-purple-400 font-medium'>
+                        {t('typeTimeOff')}
+                      </span>
+                      <span className='text-xs font-bold text-purple-600 dark:text-purple-400'>
+                        {s.timeOffDays}d
                       </span>
                     </div>
                   )}

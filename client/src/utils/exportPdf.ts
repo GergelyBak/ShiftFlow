@@ -12,6 +12,10 @@ export const exportAttendancePdf = (
     holidayBonus: number;
     vacationDays?: number;
     sickDays?: number;
+    timeOffDays?: number;
+    expectedHours?: number | null;
+    overtime?: number | null;
+    overtimeBalance?: number | null;
   },
 ) => {
   const doc = new jsPDF();
@@ -125,8 +129,10 @@ export const exportAttendancePdf = (
   const finalY = (doc as any).lastAutoTable.finalY + 10;
 
   const hasBonus = summary.holidayBonus > 0;
-  const hasAbsences = (summary.vacationDays ?? 0) > 0 || (summary.sickDays ?? 0) > 0;
-  const boxHeight = 28 + (hasBonus ? 11 : 0) + (hasAbsences ? 11 : 0);
+  const hasAbsences = (summary.vacationDays ?? 0) > 0 || (summary.sickDays ?? 0) > 0 || (summary.timeOffDays ?? 0) > 0;
+  const hasOvertime = summary.overtime != null && summary.expectedHours != null;
+  const hasBalance = summary.overtimeBalance != null;
+  const boxHeight = 28 + (hasBonus ? 11 : 0) + (hasAbsences ? 11 : 0) + (hasOvertime ? 11 : 0) + (hasBalance ? 11 : 0);
 
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(14, finalY, 182, boxHeight, 3, 3, 'F');
@@ -162,6 +168,35 @@ export const exportAttendancePdf = (
       const col = (summary.vacationDays ?? 0) > 0 ? 110 : 20;
       doc.text(`Sick Leave: ${summary.sickDays} day(s) (${formatHours((summary.sickDays ?? 0) * 8)})`, col, nextY);
     }
+    if ((summary.timeOffDays ?? 0) > 0) {
+      const col = (summary.vacationDays ?? 0) > 0 || (summary.sickDays ?? 0) > 0 ? 110 : 20;
+      doc.text(`Time Off: ${summary.timeOffDays} day(s) (${formatHours((summary.timeOffDays ?? 0) * 8)})`, col, nextY);
+    }
+  }
+
+  if (hasOvertime) {
+    nextY += 11;
+    const ot = summary.overtime!;
+    const sign = ot >= 0 ? '+' : '';
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(ot >= 0 ? 22 : 220, ot >= 0 ? 163 : 38, ot >= 0 ? 74 : 38);
+    doc.text(
+      `Overtime: ${sign}${formatHours(Math.abs(ot))}  (Expected: ${formatHours(summary.expectedHours!)})`,
+      20,
+      nextY,
+    );
+  }
+
+  if (hasBalance) {
+    nextY += 11;
+    const bal = summary.overtimeBalance!;
+    const sign = bal >= 0 ? '+' : '';
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(bal >= 0 ? 22 : 220, bal >= 0 ? 163 : 38, bal >= 0 ? 74 : 38);
+    doc.text(`Overall balance: ${sign}${formatHours(Math.abs(bal))}`, 20, nextY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(150, 150, 150);
+    doc.text('(cumulative overtime incl. all months)', 80, nextY);
   }
 
   // ── Footer ────────────────────────────────────────────────

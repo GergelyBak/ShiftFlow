@@ -22,6 +22,8 @@ router.get(
 );
 router.get('/detail', authMiddleware, attendanceController.getAttendanceDetail);
 router.get('/my', authMiddleware, attendanceController.getMyAttendance);
+router.get('/my-overtime', authMiddleware, attendanceController.getMyOvertimeTotal);
+router.get('/overtime-total', authMiddleware, attendanceController.getOvertimeTotal);
 router.get('/all', authMiddleware, attendanceController.getAllAttendance);
 router.patch(
   '/:id/approve',

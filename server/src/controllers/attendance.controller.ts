@@ -120,9 +120,26 @@ export const createManualAttendance = async (req: any, res: Response) => {
     const checkIn = entryType === 'work'
       ? fromZonedTime(`${date}T${checkInTime}:00`, timezone)
       : fromZonedTime(`${date}T00:00:00`, timezone);
-    const checkOut = entryType === 'work'
+
+    let checkOut = entryType === 'work'
       ? (checkOutTime ? fromZonedTime(`${date}T${checkOutTime}:00`, timezone) : undefined)
       : fromZonedTime(`${date}T23:59:59`, timezone);
+
+    // Overnight shift: if checkout <= checkin, move checkout to next day
+    if (checkOut && checkOut <= checkIn) {
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDateStr = nextDay.toISOString().slice(0, 10);
+      checkOut = fromZonedTime(`${nextDateStr}T${checkOutTime}:00`, timezone);
+    }
+
+    if (checkOut) {
+      const durationHours = (checkOut.getTime() - checkIn.getTime()) / 3600000;
+      if (durationHours > 24) {
+        return res.status(400).json({ message: 'Shift duration cannot exceed 24 hours' });
+      }
+    }
+
     const holiday = isGermanHoliday(checkIn);
 
     const attendance = await Attendance.create({
@@ -151,6 +168,31 @@ export const createManualAttendance = async (req: any, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+// GET /api/attendance/my-overtime
+export const getMyOvertimeTotal = async (req: any, res: Response) => {
+  try {
+    const data = await attendanceService.getMyOvertimeTotal(req.user.id);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/attendance/overtime-total?userId=...
+export const getOvertimeTotal = async (req: any, res: Response) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ message: 'userId required' });
+    if (req.user.role !== 'admin' && userId !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const data = await attendanceService.getMyOvertimeTotal(userId as string);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // GET /api/attendance/detail?userId=...&start=...&end=...
 export const getAttendanceDetail = async (req: any, res: Response) => {
   try {
