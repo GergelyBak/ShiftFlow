@@ -12,6 +12,7 @@ export interface IUser extends Document {
   employeeType?: string;
   hourlyRate?: number;
   weeklyHourLimit?: number | null;
+  contractStartDate?: Date | null;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -52,6 +53,7 @@ const userSchema = new mongoose.Schema<IUser>(
     employeeType: { type: String },
     hourlyRate: { type: Number },
     weeklyHourLimit: { type: Number, default: null },
+    contractStartDate: { type: Date, default: null },
   },
   {
     timestamps: true,

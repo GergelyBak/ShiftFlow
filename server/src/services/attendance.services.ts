@@ -185,7 +185,6 @@ export const getAttendanceSummary = async (start: string, end: string) => {
     summary[userId].totalHours += hours;
   }
 
-  const calendarDays = (new Date(end + 'T12:00:00').getTime() - new Date(start + 'T12:00:00').getTime()) / 86400000 + 1;
   const MINIJOB_MONTHLY_LIMIT = 603;
 
   return Object.values(summary).map((s) => {
@@ -198,7 +197,8 @@ export const getAttendanceSummary = async (start: string, end: string) => {
       expectedHours = Math.round((workdays / 5) * s.user.weeklyHourLimit * 100) / 100;
     }
 
-    const hoursForOvertime = totalHours - (s.timeOffDays * 8);
+    // Use raw worked hours (s.totalHours), NOT the bonus-inflated totalHours
+    const hoursForOvertime = s.totalHours - (s.timeOffDays * 8);
     const overtime = expectedHours != null
       ? Math.round((hoursForOvertime - expectedHours) * 100) / 100
       : null;
@@ -278,35 +278,38 @@ export const getMyOvertimeTotal = async (userId: string) => {
 
   let totalOvertime = 0;
 
+  const contractStart = user.contractStartDate ? new Date(user.contractStartDate) : null;
+
   for (const [key, monthRecords] of Object.entries(monthMap)) {
     const [year, month] = key.split('-').map(Number);
     const lastDay = new Date(year, month, 0).getDate();
     const start = `${year}-${String(month).padStart(2, '0')}-01`;
-    const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const end   = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    // Skip months before the contract start date
+    if (contractStart) {
+      const monthStart = new Date(year, month - 1, 1);
+      if (monthStart < contractStart) continue;
+    }
 
     let actualHours = 0;
-    let holidayHours = 0;
     for (const r of monthRecords) {
       const rType = (r as any).type || 'work';
       if (rType === 'paid_vacation' || rType === 'sick_leave') {
         actualHours += 8;
         continue;
       }
-      if (rType === 'time_off') {
-        continue; // 0 hours — deducts from overtime balance
-      }
+      if (rType === 'time_off') continue; // deducts from balance
       if (!r.checkOut) continue;
       const diff = new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime();
       const breakMs = (r.breakMinutes || 0) * 60 * 1000;
-      const h = (diff - breakMs) / 1000 / 60 / 60;
-      actualHours += h;
-      if (r.isHoliday) holidayHours += h;
+      actualHours += (diff - breakMs) / 1000 / 60 / 60;
+      // Note: holiday bonus excluded — overtime is about time worked, not pay
     }
-    actualHours += holidayHours * 0.5;
 
     let expectedHours: number | null = null;
     if (user.employeeType === 'minijob' && user.hourlyRate) {
-      expectedHours = (MINIJOB_MONTHLY_LIMIT / user.hourlyRate) * (lastDay / 30);
+      expectedHours = MINIJOB_MONTHLY_LIMIT / user.hourlyRate; // fixed monthly limit
     } else if (user.weeklyHourLimit != null) {
       expectedHours = (countWorkdays(start, end) / 5) * user.weeklyHourLimit;
     }
