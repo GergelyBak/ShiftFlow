@@ -132,7 +132,7 @@ export const getAttendanceSummary = async (start: string, end: string) => {
   const records = await Attendance.find({
     checkIn: { $gte: startDate, $lte: endDate },
     status: 'approved',
-  }).populate('userId', 'firstName lastName email weeklyHourLimit employeeType hourlyRate');
+  }).populate('userId', 'firstName lastName email weeklyHourLimit employeeType hourlyRate contractStartDate previousEmployeeType previousHourlyRate');
 
   const workdays = countWorkdays(start, end);
   const summary: Record<string, any> = {};
@@ -142,19 +142,29 @@ export const getAttendanceSummary = async (start: string, end: string) => {
     const userId = user._id.toString();
 
     if (!summary[userId]) {
+      // Determine which employment rules apply for this queried period
+      const isPreContract =
+        user.contractStartDate &&
+        new Date(start) < new Date(user.contractStartDate);
+
+      const effectiveType       = isPreContract ? user.previousEmployeeType  : user.employeeType;
+      const effectiveHourlyRate = isPreContract ? user.previousHourlyRate    : user.hourlyRate;
+      const effectiveWeeklyLim  = isPreContract ? null                       : user.weeklyHourLimit;
+
       summary[userId] = {
         user: {
           id: userId,
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          weeklyHourLimit: user.weeklyHourLimit ?? null,
-          employeeType: user.employeeType ?? null,
-          hourlyRate: user.hourlyRate ?? null,
+          weeklyHourLimit: effectiveWeeklyLim ?? null,
+          employeeType: effectiveType ?? null,
+          hourlyRate: effectiveHourlyRate ?? null,
         },
-        normalHours: 0,
-        holidayHours: 0,
-        totalHours: 0,
+        workedHours: 0,        // only actual 'work' clock hours
+        workedHolidayHours: 0, // work hours on public holidays
+        normalHours: 0,        // for display (work only, non-holiday)
+        holidayHours: 0,       // for display (work only, on holiday)
         vacationDays: 0,
         sickDays: 0,
         timeOffDays: 0,
@@ -163,32 +173,34 @@ export const getAttendanceSummary = async (start: string, end: string) => {
 
     const entryType = (record as any).type || 'work';
 
-    let hours: number;
-    if (entryType === 'paid_vacation' || entryType === 'sick_leave' || entryType === 'time_off') {
-      hours = 8;
-      if (entryType === 'paid_vacation') summary[userId].vacationDays += 1;
-      else if (entryType === 'sick_leave') summary[userId].sickDays += 1;
-      else summary[userId].timeOffDays += 1;
+    if (entryType === 'paid_vacation') {
+      summary[userId].vacationDays += 1;
+    } else if (entryType === 'sick_leave') {
+      summary[userId].sickDays += 1;
+    } else if (entryType === 'time_off') {
+      summary[userId].timeOffDays += 1;
     } else {
+      // actual work
       if (!record.checkOut) continue;
       const diff = new Date(record.checkOut).getTime() - new Date(record.checkIn).getTime();
       const breakMs = (record.breakMinutes || 0) * 60 * 1000;
-      hours = (diff - breakMs) / 1000 / 60 / 60;
-    }
+      const hours = (diff - breakMs) / 1000 / 60 / 60;
 
-    if (record.isHoliday) {
-      summary[userId].holidayHours += hours;
-    } else {
-      summary[userId].normalHours += hours;
+      summary[userId].workedHours += hours;
+      if (record.isHoliday) {
+        summary[userId].workedHolidayHours += hours;
+        summary[userId].holidayHours += hours;
+      } else {
+        summary[userId].normalHours += hours;
+      }
     }
-
-    summary[userId].totalHours += hours;
   }
 
   const MINIJOB_MONTHLY_LIMIT = 603;
 
   return Object.values(summary).map((s) => {
-    const totalHours = Math.round((s.totalHours + s.holidayHours * 0.5) * 100) / 100;
+    const holidayBonus    = s.workedHolidayHours * 0.5;
+    const totalHours      = Math.round((s.workedHours + holidayBonus) * 100) / 100;
 
     let expectedHours: number | null = null;
     if (s.user.employeeType === 'minijob' && s.user.hourlyRate) {
@@ -197,17 +209,25 @@ export const getAttendanceSummary = async (start: string, end: string) => {
       expectedHours = Math.round((workdays / 5) * s.user.weeklyHourLimit * 100) / 100;
     }
 
-    // Use raw worked hours (s.totalHours), NOT the bonus-inflated totalHours
-    const hoursForOvertime = s.totalHours - (s.timeOffDays * 8);
-    const overtime = expectedHours != null
-      ? Math.round((hoursForOvertime - expectedHours) * 100) / 100
-      : null;
+    // Overtime = actual worked hours vs adjusted expected
+    // Vacation & sick reduce expected (excused absence covers those days)
+    // Time_off is UNexcused — does NOT reduce expected
+    let overtime: number | null = null;
+    if (expectedHours != null && s.user.employeeType !== 'minijob') {
+      const dailyTarget       = (s.user.weeklyHourLimit ?? 40) / 5;
+      const excusedHours      = (s.vacationDays + s.sickDays) * dailyTarget;
+      const adjustedExpected  = Math.max(0, expectedHours - excusedHours);
+      overtime = Math.round((s.workedHours - adjustedExpected) * 100) / 100;
+    } else if (expectedHours != null && s.user.employeeType === 'minijob') {
+      // For minijob: pure worked vs monthly limit, no daily-target adjustment
+      overtime = Math.round((s.workedHours - expectedHours) * 100) / 100;
+    }
 
     return {
       ...s,
-      normalHours: Math.round(s.normalHours * 100) / 100,
+      normalHours:  Math.round(s.normalHours  * 100) / 100,
       holidayHours: Math.round(s.holidayHours * 100) / 100,
-      holidayBonus: Math.round(s.holidayHours * 0.5 * 100) / 100,
+      holidayBonus: Math.round(holidayBonus   * 100) / 100,
       totalHours,
       expectedHours,
       overtime,
@@ -286,36 +306,45 @@ export const getMyOvertimeTotal = async (userId: string) => {
     const start = `${year}-${String(month).padStart(2, '0')}-01`;
     const end   = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-    // Skip months before the contract start date
-    if (contractStart) {
-      const monthStart = new Date(year, month - 1, 1);
-      if (monthStart < contractStart) continue;
-    }
+    const monthStart = new Date(year, month - 1, 1);
+    const isPreContract = contractStart != null && monthStart < contractStart;
 
-    let actualHours = 0;
+    // Determine which employment rules apply for this month
+    const empType   = isPreContract ? (user as any).previousEmployeeType  : user.employeeType;
+    const hourlyRt  = isPreContract ? (user as any).previousHourlyRate    : user.hourlyRate;
+    const weeklyLim = isPreContract ? null                                 : user.weeklyHourLimit;
+
+    // Skip months with no relevant employment data
+    if (!empType) continue;
+    if (empType === 'owner' || empType === 'maternity') continue;
+
+    let rawWorkedHours = 0;
+    let vacationDays   = 0;
+    let sickDays       = 0;
+
     for (const r of monthRecords) {
       const rType = (r as any).type || 'work';
-      if (rType === 'paid_vacation' || rType === 'sick_leave') {
-        actualHours += 8;
-        continue;
-      }
-      if (rType === 'time_off') continue; // deducts from balance
+      if (rType === 'paid_vacation') { vacationDays++;  continue; }
+      if (rType === 'sick_leave')    { sickDays++;      continue; }
+      if (rType === 'time_off')      { continue; } // unexcused, no credit
       if (!r.checkOut) continue;
-      const diff = new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime();
+      const diff   = new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime();
       const breakMs = (r.breakMinutes || 0) * 60 * 1000;
-      actualHours += (diff - breakMs) / 1000 / 60 / 60;
-      // Note: holiday bonus excluded — overtime is about time worked, not pay
+      rawWorkedHours += (diff - breakMs) / 1000 / 60 / 60;
     }
 
     let expectedHours: number | null = null;
-    if (user.employeeType === 'minijob' && user.hourlyRate) {
-      expectedHours = MINIJOB_MONTHLY_LIMIT / user.hourlyRate; // fixed monthly limit
-    } else if (user.weeklyHourLimit != null) {
-      expectedHours = (countWorkdays(start, end) / 5) * user.weeklyHourLimit;
-    }
-
-    if (expectedHours != null) {
-      totalOvertime += actualHours - expectedHours;
+    if (empType === 'minijob' && hourlyRt) {
+      // Minijob: compare raw worked vs monthly limit, no vacation adjustment
+      expectedHours = MINIJOB_MONTHLY_LIMIT / hourlyRt;
+      totalOvertime += rawWorkedHours - expectedHours;
+    } else if (weeklyLim != null) {
+      expectedHours = (countWorkdays(start, end) / 5) * weeklyLim;
+      // Reduce expected by excused absence days
+      const dailyTarget      = weeklyLim / 5;
+      const excusedHours     = (vacationDays + sickDays) * dailyTarget;
+      const adjustedExpected = Math.max(0, expectedHours - excusedHours);
+      totalOvertime += rawWorkedHours - adjustedExpected;
     }
   }
 
