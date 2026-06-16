@@ -9,12 +9,21 @@ async function run() {
 
   const result = await User.findOneAndUpdate(
     { email: 'bakgergely@gmail.com' },
-    { $set: { contractStartDate: new Date('2026-06-01') } },
+    {
+      $set: {
+        contractStartDate: new Date('2026-06-01'),
+        previousEmployeeType: 'minijob',
+        previousHourlyRate: 16,
+      },
+    },
     { new: true }
   );
 
   if (result) {
-    console.log('✅ contractStartDate set to 2026-06-01 for bakgergely@gmail.com');
+    console.log('✅ Updated bakgergely@gmail.com:');
+    console.log('   contractStartDate: 2026-06-01');
+    console.log('   previousEmployeeType: minijob');
+    console.log('   previousHourlyRate: 16€');
   } else {
     console.log('❌ User not found');
   }
