@@ -200,7 +200,8 @@ export const getAttendanceSummary = async (start: string, end: string) => {
 
   return Object.values(summary).map((s) => {
     const holidayBonus    = s.workedHolidayHours * 0.5;
-    const totalHours      = Math.round((s.workedHours + holidayBonus) * 100) / 100;
+    const absenceHours    = (s.vacationDays + s.sickDays) * 8;
+    const totalHours      = Math.round((s.workedHours + holidayBonus + absenceHours) * 100) / 100;
 
     let expectedHours: number | null = null;
     if (s.user.employeeType === 'minijob' && s.user.hourlyRate) {
