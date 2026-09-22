@@ -11,7 +11,7 @@ router.get('/', authMiddleware, async (req: any, res) => {
     return res.status(403).json({ message: 'Forbidden' });
   }
 
-  const users = await User.find().select('_id firstName lastName email pin');
+  const users = await User.find().select('_id firstName lastName email');
   res.json(users);
 });
 

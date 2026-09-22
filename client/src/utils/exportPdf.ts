@@ -76,12 +76,13 @@ export const exportAttendancePdf = (
   const typeLabel = (type: string) => {
     if (type === 'paid_vacation') return 'Paid Vacation';
     if (type === 'sick_leave') return 'Sick Leave';
+    if (type === 'time_off') return 'Time Off';
     return '';
   };
 
   // ── Table ─────────────────────────────────────────────────
   const rows = records.map((r) => {
-    const isAbsence = r.type === 'paid_vacation' || r.type === 'sick_leave';
+    const isAbsence = r.type === 'paid_vacation' || r.type === 'sick_leave' || r.type === 'time_off';
     const note = isAbsence
       ? typeLabel(r.type)
       : r.isHoliday
@@ -129,8 +130,11 @@ export const exportAttendancePdf = (
   const finalY = (doc as any).lastAutoTable.finalY + 10;
 
   const hasBonus = summary.holidayBonus > 0;
-  const hasAbsences = (summary.vacationDays ?? 0) > 0 || (summary.sickDays ?? 0) > 0 || (summary.timeOffDays ?? 0) > 0;
-  const boxHeight = 28 + (hasBonus ? 11 : 0) + (hasAbsences ? 11 : 0);
+  const vacDays = summary.vacationDays ?? 0;
+  const sickDays = summary.sickDays ?? 0;
+  const timeOffDays = summary.timeOffDays ?? 0;
+  const absenceLines = (vacDays > 0 ? 1 : 0) + (sickDays > 0 ? 1 : 0) + (timeOffDays > 0 ? 1 : 0);
+  const boxHeight = 28 + (hasBonus ? 11 : 0) + absenceLines * 11;
 
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(14, finalY, 182, boxHeight, 3, 3, 'F');
@@ -155,21 +159,19 @@ export const exportAttendancePdf = (
     doc.text(`Holiday bonus (+50%): +${formatHours(summary.holidayBonus)}`, 20, nextY);
   }
 
-  if (hasAbsences) {
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 80, 80);
+  if (vacDays > 0) {
     nextY += 11;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    if ((summary.vacationDays ?? 0) > 0) {
-      doc.text(`Paid Vacation: ${summary.vacationDays} day(s) (${formatHours((summary.vacationDays ?? 0) * 8)})`, 20, nextY);
-    }
-    if ((summary.sickDays ?? 0) > 0) {
-      const col = (summary.vacationDays ?? 0) > 0 ? 110 : 20;
-      doc.text(`Sick Leave: ${summary.sickDays} day(s) (${formatHours((summary.sickDays ?? 0) * 8)})`, col, nextY);
-    }
-    if ((summary.timeOffDays ?? 0) > 0) {
-      const col = (summary.vacationDays ?? 0) > 0 || (summary.sickDays ?? 0) > 0 ? 110 : 20;
-      doc.text(`Time Off: ${summary.timeOffDays} day(s) (${formatHours((summary.timeOffDays ?? 0) * 8)})`, col, nextY);
-    }
+    doc.text(`Paid Vacation: ${vacDays} day(s) (${formatHours(vacDays * 8)})`, 20, nextY);
+  }
+  if (sickDays > 0) {
+    nextY += 11;
+    doc.text(`Sick Leave: ${sickDays} day(s) (${formatHours(sickDays * 8)})`, 20, nextY);
+  }
+  if (timeOffDays > 0) {
+    nextY += 11;
+    doc.text(`Time Off: ${timeOffDays} day(s) (${formatHours(timeOffDays * 8)})`, 20, nextY);
   }
 
   // ── Footer ────────────────────────────────────────────────

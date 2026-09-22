@@ -98,25 +98,22 @@ export const forgotPassword = async (req: any, res: any) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'No account with that email' });
+      return res.json({ message: 'If that email is registered, you\'ll receive a reset link.' });
     }
-    console.log('user found:', user.firstName);
 
-    const token = crypto.randomBytes(32).toString('hex');
-    user.resetToken = token;
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    user.resetToken = hashedToken;
     user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
-    console.log('token saved');
 
     const clientUrl =
       process.env.CLIENT_URL || 'https://shift-flow-sigma.vercel.app';
-    const resetUrl = `${clientUrl}/reset-password?token=${token}`;
-    console.log('sending email to:', email);
+    const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
 
     await sendPasswordResetEmail(user.email, user.firstName, resetUrl);
-    console.log('email sent');
 
-    res.json({ message: 'Reset email sent' });
+    res.json({ message: 'If that email is registered, you\'ll receive a reset link.' });
   } catch (error: any) {
     console.error('forgot password error:', error.message);
     res.status(500).json({ message: error.message });
@@ -128,8 +125,9 @@ export const resetPassword = async (req: any, res: any) => {
   try {
     const { token, password } = req.body;
 
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const user = await User.findOne({
-      resetToken: token,
+      resetToken: hashedToken,
       resetTokenExpiry: { $gt: new Date() },
     });
 
