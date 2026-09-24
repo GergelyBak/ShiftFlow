@@ -86,6 +86,11 @@ const Dashboard = () => {
   };
 
   const calcAttendanceHours = (record: any) => {
+    // Absence entries are stored as 00:00–23:59, so don't use their times:
+    // vacation and sick leave are credited 8h (as on the server), time off 0h
+    const type = record.type || 'work';
+    if (type === 'paid_vacation' || type === 'sick_leave') return 8;
+    if (type === 'time_off') return 0;
     const diff =
       new Date(record.checkOut).getTime() - new Date(record.checkIn).getTime();
     const breakMs = (record.breakMinutes || 0) * 60 * 1000;
@@ -142,7 +147,7 @@ const Dashboard = () => {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const nextShift = futureShifts[0];
-  const lastAttendance = attendance[0];
+  const lastAttendance = attendance.find((a) => (a.type || 'work') === 'work');
 
   const currentMonthName = now.toLocaleString(locale, { month: 'long' });
   const lastMonthName = new Date(lastMonthYear, lastMonth).toLocaleString(
