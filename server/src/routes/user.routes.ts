@@ -18,7 +18,7 @@ router.get('/', authMiddleware, async (req: any, res) => {
 // GET own contract data (used for the holiday entitlement)
 router.get('/me', authMiddleware, async (req: any, res) => {
   const user = await User.findById(req.user.id).select(
-    '_id firstName lastName employeeType contractStartDate',
+    '_id firstName lastName employeeType contractStartDate previousEmployeeType',
   );
   if (!user) return res.status(404).json({ message: 'User not found' });
   res.json(user);

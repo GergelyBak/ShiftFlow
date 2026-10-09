@@ -4,18 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/axios';
 import { ChevronLeft, Plane, Check, Clock } from 'lucide-react';
 import {
-  calcHolidayEntitlement,
-  countHolidayCompDays,
+  calcHolidayBreakdown,
+  type ContractInfo,
 } from '../../utils/holidayCredit';
 
 const Account = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'de' ? 'de-DE' : 'en-GB';
   const [absences, setAbsences] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
-  const [contractStartDate, setContractStartDate] = useState<string | null>(
-    null,
-  );
+  const [contract, setContract] = useState<ContractInfo>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +29,7 @@ const Account = () => {
         ]);
         setAbsences(absencesRes.data);
         setAttendance(attendanceRes.data);
-        setContractStartDate(meRes.data.contractStartDate ?? null);
+        setContract(meRes.data);
       } catch {
         console.error('Failed to load absences');
       } finally {
@@ -52,13 +51,10 @@ const Account = () => {
     return acc + Math.round(diff / 1000 / 60 / 60 / 24) + 1;
   }, 0);
 
-  const holidayCompDays = countHolidayCompDays(
-    attendance,
-    currentYear,
-    contractStartDate,
-  );
-  const totalDays =
-    calcHolidayEntitlement(contractStartDate, currentYear) + holidayCompDays;
+  const breakdown = calcHolidayBreakdown(attendance, currentYear, contract);
+  const totalDays = breakdown.total;
+  const monthName = (m: number) =>
+    new Date(currentYear, m).toLocaleString(locale, { month: 'short' });
   const remainingDays = totalDays - usedDays;
   const percentage = Math.min((usedDays / totalDays) * 100, 100);
 
@@ -100,13 +96,7 @@ const Account = () => {
               {remainingDays}
               <span className='text-base font-normal text-slate-400 ml-1'>/ {totalDays} days</span>
             </p>
-            <p className='text-xs text-slate-400 mt-1'>{t('remaining')}</p>
-            {holidayCompDays > 0 && (
-              <p className='text-xs text-amber-500 mt-1'>
-                {t('holidayCompDays', { count: holidayCompDays })}
-              </p>
-            )}
-          </div>
+            <p className='text-xs text-slate-400 mt-1'>{t('remaining')}</p>          </div>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
             remainingDays > 5
               ? 'bg-green-500/10 border-2 border-green-500'
@@ -158,6 +148,80 @@ const Account = () => {
           </div>
         </div>
       </div>
+
+      {/* ENTITLEMENT BREAKDOWN */}
+      {!loading && (
+        <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5 mb-4'>
+          <p className='text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-3 pt-2 pb-2'>
+            {t('entitlementBreakdown')}
+          </p>
+          <div className='space-y-1'>
+            {breakdown.minijob && (
+              <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 flex items-center justify-between gap-3'>
+                <div>
+                  <p className='text-sm font-medium text-slate-800 dark:text-white'>
+                    {t('minijobLeave')} ({monthName(breakdown.minijob.fromMonth)}–
+                    {monthName(breakdown.minijob.toMonth)})
+                  </p>
+                  <p className='text-xs text-slate-400 mt-0.5'>
+                    {t('minijobLeaveDetail', {
+                      workDays: breakdown.minijob.workDays,
+                      daysPerWeek: breakdown.minijob.daysPerWeek.toLocaleString(locale),
+                      months: breakdown.minijob.months,
+                    })}
+                  </p>
+                </div>
+                <span className='text-sm font-bold text-slate-600 dark:text-slate-300 shrink-0'>
+                  {breakdown.minijob.days.toLocaleString(locale)}d
+                </span>
+              </div>
+            )}
+            <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 flex items-center justify-between gap-3'>
+              <div>
+                <p className='text-sm font-medium text-slate-800 dark:text-white'>
+                  {t('fullTimeLeave')}
+                  {breakdown.fullTimeFromMonth != null &&
+                    ` (${monthName(breakdown.fullTimeFromMonth)}–${monthName(11)})`}
+                </p>
+                <p className='text-xs text-slate-400 mt-0.5'>
+                  {t('fullTimeLeaveDetail', {
+                    months:
+                      breakdown.fullTimeFromMonth != null
+                        ? 12 - breakdown.fullTimeFromMonth
+                        : 12,
+                  })}
+                </p>
+              </div>
+              <span className='text-sm font-bold text-slate-600 dark:text-slate-300 shrink-0'>
+                {breakdown.fullTime}d
+              </span>
+            </div>
+            {breakdown.compDays > 0 && (
+              <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 flex items-center justify-between gap-3'>
+                <div>
+                  <p className='text-sm font-medium text-slate-800 dark:text-white'>
+                    {t('holidayWorkLeave')}
+                  </p>
+                  <p className='text-xs text-slate-400 mt-0.5'>
+                    {t('holidayWorkLeaveDetail')}
+                  </p>
+                </div>
+                <span className='text-sm font-bold text-amber-500 shrink-0'>
+                  +{breakdown.compDays}d
+                </span>
+              </div>
+            )}
+            <div className='bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 flex items-center justify-between'>
+              <p className='text-sm font-semibold text-slate-800 dark:text-white'>
+                {t('total')}
+              </p>
+              <span className='text-sm font-bold text-green-600 dark:text-green-400'>
+                {totalDays.toLocaleString(locale)}d
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* APPROVED ABSENCES THIS YEAR */}
       <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>

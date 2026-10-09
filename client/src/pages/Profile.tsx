@@ -12,10 +12,7 @@ import {
   Info,
   ChevronRight,
 } from 'lucide-react';
-import {
-  calcHolidayEntitlement,
-  countHolidayCompDays,
-} from '../utils/holidayCredit';
+import { calcHolidayBreakdown } from '../utils/holidayCredit';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -37,14 +34,9 @@ const Profile = () => {
           api.get('/users/me', { headers }),
         ]);
         const currentYear = new Date().getFullYear();
-        const contractStartDate = meRes.data.contractStartDate ?? null;
         setTotalDays(
-          calcHolidayEntitlement(contractStartDate, currentYear) +
-            countHolidayCompDays(
-              attendanceRes.data,
-              currentYear,
-              contractStartDate,
-            ),
+          calcHolidayBreakdown(attendanceRes.data, currentYear, meRes.data)
+            .total,
         );
         const days = res.data
           .filter((a: any) => {
