@@ -12,13 +12,16 @@ import {
   Info,
   ChevronRight,
 } from 'lucide-react';
-
-const TOTAL_HOLIDAY_DAYS = 24;
+import {
+  TOTAL_HOLIDAY_DAYS,
+  countHolidayCompDays,
+} from '../utils/holidayCredit';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [usedDays, setUsedDays] = useState(0);
+  const [holidayCompDays, setHolidayCompDays] = useState(0);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`;
@@ -27,10 +30,15 @@ const Profile = () => {
     const fetchAbsences = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await api.get('/absences/my', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers = { Authorization: `Bearer ${token}` };
+        const [res, attendanceRes] = await Promise.all([
+          api.get('/absences/my', { headers }),
+          api.get('/attendance/my', { headers }),
+        ]);
         const currentYear = new Date().getFullYear();
+        setHolidayCompDays(
+          countHolidayCompDays(attendanceRes.data, currentYear),
+        );
         const days = res.data
           .filter((a: any) => {
             const year = new Date(a.startDate).getFullYear();
@@ -49,7 +57,8 @@ const Profile = () => {
     fetchAbsences();
   }, []);
 
-  const remainingDays = TOTAL_HOLIDAY_DAYS - usedDays;
+  const totalDays = TOTAL_HOLIDAY_DAYS + holidayCompDays;
+  const remainingDays = totalDays - usedDays;
   const badgeColor =
     remainingDays > 5
       ? 'text-green-500 bg-green-500/10'
@@ -66,7 +75,7 @@ const Profile = () => {
         {
           label: t('accounts'),
           icon: BarChart,
-          badge: `${remainingDays} / ${TOTAL_HOLIDAY_DAYS} days`,
+          badge: `${remainingDays} / ${totalDays} days`,
           badgeColor,
           onClick: () => navigate('/account'),
         },

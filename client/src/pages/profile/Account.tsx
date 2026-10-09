@@ -3,23 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/axios';
 import { ChevronLeft, Plane, Check, Clock } from 'lucide-react';
-
-const TOTAL_HOLIDAY_DAYS = 24;
+import {
+  TOTAL_HOLIDAY_DAYS,
+  countHolidayCompDays,
+} from '../../utils/holidayCredit';
 
 const Account = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [absences, setAbsences] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAbsences = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await api.get('/absences/my', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setAbsences(res.data);
+        const headers = { Authorization: `Bearer ${token}` };
+        const [absencesRes, attendanceRes] = await Promise.all([
+          api.get('/absences/my', { headers }),
+          api.get('/attendance/my', { headers }),
+        ]);
+        setAbsences(absencesRes.data);
+        setAttendance(attendanceRes.data);
       } catch {
         console.error('Failed to load absences');
       } finally {
@@ -41,8 +47,10 @@ const Account = () => {
     return acc + Math.round(diff / 1000 / 60 / 60 / 24) + 1;
   }, 0);
 
-  const remainingDays = TOTAL_HOLIDAY_DAYS - usedDays;
-  const percentage = Math.min((usedDays / TOTAL_HOLIDAY_DAYS) * 100, 100);
+  const holidayCompDays = countHolidayCompDays(attendance, currentYear);
+  const totalDays = TOTAL_HOLIDAY_DAYS + holidayCompDays;
+  const remainingDays = totalDays - usedDays;
+  const percentage = Math.min((usedDays / totalDays) * 100, 100);
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('de-DE', {
@@ -80,9 +88,14 @@ const Account = () => {
             </p>
             <p className='text-3xl font-bold text-slate-900 dark:text-white'>
               {remainingDays}
-              <span className='text-base font-normal text-slate-400 ml-1'>/ {TOTAL_HOLIDAY_DAYS} days</span>
+              <span className='text-base font-normal text-slate-400 ml-1'>/ {totalDays} days</span>
             </p>
             <p className='text-xs text-slate-400 mt-1'>{t('remaining')}</p>
+            {holidayCompDays > 0 && (
+              <p className='text-xs text-amber-500 mt-1'>
+                {t('holidayCompDays', { count: holidayCompDays })}
+              </p>
+            )}
           </div>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
             remainingDays > 5
@@ -115,7 +128,7 @@ const Account = () => {
         <div className='grid grid-cols-3 gap-2 mt-4'>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3 text-center'>
             <p className='text-xs text-slate-400 mb-1'>{t('total')}</p>
-            <p className='text-lg font-bold text-slate-800 dark:text-white'>{TOTAL_HOLIDAY_DAYS}</p>
+            <p className='text-lg font-bold text-slate-800 dark:text-white'>{totalDays}</p>
           </div>
           <div className='bg-white dark:bg-slate-900 rounded-2xl p-3 text-center'>
             <p className='text-xs text-slate-400 mb-1'>{t('approved')}</p>
