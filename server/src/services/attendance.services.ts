@@ -3,11 +3,17 @@ import Attendance from '../models/Attendance';
 import { isGermanHoliday } from '../utils/holidays';
 import { fromZonedTime } from 'date-fns-tz';
 
-export const calcAutoBreak = (workedHours: number): number => {
-  if (workedHours > 9) return 45;
-  if (workedHours > 6) return 30;
-  if (workedHours > 5) return 15;
-  return 0;
+// Statutory break per §4 ArbZG: 30 min for more than 6h of work, 45 min for
+// more than 9h. The thresholds apply to net working time (excluding the break),
+// so the deduction never pushes net time below the threshold that triggered it
+// (e.g. 6h20 present → 20 min break → 6h net).
+export const calcAutoBreak = (presenceHours: number): number => {
+  const presenceMin = Math.round(presenceHours * 60);
+  if (presenceMin <= 6 * 60) return 0;
+  if (presenceMin <= 6 * 60 + 30) return presenceMin - 6 * 60;
+  if (presenceMin <= 9 * 60 + 30) return 30;
+  if (presenceMin <= 9 * 60 + 45) return presenceMin - 9 * 60;
+  return 45;
 };
 
 // Generate a unique 4-digit PIN
