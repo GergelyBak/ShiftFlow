@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/axios';
 import { ChevronLeft, Plane, Check, Clock } from 'lucide-react';
 import {
-  TOTAL_HOLIDAY_DAYS,
+  calcHolidayEntitlement,
   countHolidayCompDays,
 } from '../../utils/holidayCredit';
 
@@ -13,6 +13,9 @@ const Account = () => {
   const { t } = useTranslation();
   const [absences, setAbsences] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
+  const [contractStartDate, setContractStartDate] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,12 +23,14 @@ const Account = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
-        const [absencesRes, attendanceRes] = await Promise.all([
+        const [absencesRes, attendanceRes, meRes] = await Promise.all([
           api.get('/absences/my', { headers }),
           api.get('/attendance/my', { headers }),
+          api.get('/users/me', { headers }),
         ]);
         setAbsences(absencesRes.data);
         setAttendance(attendanceRes.data);
+        setContractStartDate(meRes.data.contractStartDate ?? null);
       } catch {
         console.error('Failed to load absences');
       } finally {
@@ -47,8 +52,13 @@ const Account = () => {
     return acc + Math.round(diff / 1000 / 60 / 60 / 24) + 1;
   }, 0);
 
-  const holidayCompDays = countHolidayCompDays(attendance, currentYear);
-  const totalDays = TOTAL_HOLIDAY_DAYS + holidayCompDays;
+  const holidayCompDays = countHolidayCompDays(
+    attendance,
+    currentYear,
+    contractStartDate,
+  );
+  const totalDays =
+    calcHolidayEntitlement(contractStartDate, currentYear) + holidayCompDays;
   const remainingDays = totalDays - usedDays;
   const percentage = Math.min((usedDays / totalDays) * 100, 100);
 

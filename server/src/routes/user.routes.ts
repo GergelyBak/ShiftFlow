@@ -15,6 +15,15 @@ router.get('/', authMiddleware, async (req: any, res) => {
   res.json(users);
 });
 
+// GET own contract data (used for the holiday entitlement)
+router.get('/me', authMiddleware, async (req: any, res) => {
+  const user = await User.findById(req.user.id).select(
+    '_id firstName lastName employeeType contractStartDate',
+  );
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user);
+});
+
 // PATCH assign PIN to existing user (admin only)
 router.patch('/:id/assign-pin', authMiddleware, async (req: any, res) => {
   if (req.user.role !== 'admin') {

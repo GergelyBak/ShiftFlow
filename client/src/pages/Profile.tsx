@@ -13,7 +13,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import {
-  TOTAL_HOLIDAY_DAYS,
+  calcHolidayEntitlement,
   countHolidayCompDays,
 } from '../utils/holidayCredit';
 
@@ -21,7 +21,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [usedDays, setUsedDays] = useState(0);
-  const [holidayCompDays, setHolidayCompDays] = useState(0);
+  const [totalDays, setTotalDays] = useState(0);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`;
@@ -31,13 +31,20 @@ const Profile = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
-        const [res, attendanceRes] = await Promise.all([
+        const [res, attendanceRes, meRes] = await Promise.all([
           api.get('/absences/my', { headers }),
           api.get('/attendance/my', { headers }),
+          api.get('/users/me', { headers }),
         ]);
         const currentYear = new Date().getFullYear();
-        setHolidayCompDays(
-          countHolidayCompDays(attendanceRes.data, currentYear),
+        const contractStartDate = meRes.data.contractStartDate ?? null;
+        setTotalDays(
+          calcHolidayEntitlement(contractStartDate, currentYear) +
+            countHolidayCompDays(
+              attendanceRes.data,
+              currentYear,
+              contractStartDate,
+            ),
         );
         const days = res.data
           .filter((a: any) => {
@@ -57,7 +64,6 @@ const Profile = () => {
     fetchAbsences();
   }, []);
 
-  const totalDays = TOTAL_HOLIDAY_DAYS + holidayCompDays;
   const remainingDays = totalDays - usedDays;
   const badgeColor =
     remainingDays > 5

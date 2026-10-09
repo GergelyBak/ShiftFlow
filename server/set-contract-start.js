@@ -12,6 +12,7 @@ async function run() {
     {
       $set: {
         contractStartDate: new Date('2026-06-01'),
+        hourlyRate: 17,
         previousEmployeeType: 'minijob',
         previousHourlyRate: 16,
       },
@@ -22,6 +23,7 @@ async function run() {
   if (result) {
     console.log('✅ Updated bakgergely@gmail.com:');
     console.log('   contractStartDate: 2026-06-01');
+    console.log('   hourlyRate: 17€');
     console.log('   previousEmployeeType: minijob');
     console.log('   previousHourlyRate: 16€');
   } else {
