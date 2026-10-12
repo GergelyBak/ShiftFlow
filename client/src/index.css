@@ -2,6 +2,16 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+/* iOS Safari zooms in on focused fields under 16px and keeps the page zoomed
+   (e.g. after login). Unlayered, so it overrides Tailwind's text-sm/text-xs. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Fix iOS Safari dark mode: date/time inputs show system-dark text */
 .dark input[type='date'],
 .dark input[type='time'],
