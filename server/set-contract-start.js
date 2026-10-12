@@ -5,7 +5,9 @@ const userSchema = new mongoose.Schema({}, { strict: false });
 const User = mongoose.model('User', userSchema);
 
 async function run() {
-  await mongoose.connect(process.env.MONGO_URI);
+  await mongoose.connect(process.env.MONGO_URI, {
+    dbName: process.env.MONGO_DB_NAME || 'shiftflow',
+  });
 
   const result = await User.findOneAndUpdate(
     { email: 'bakgergely@gmail.com' },
