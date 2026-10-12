@@ -145,3 +145,34 @@ export const resetPassword = async (req: any, res: any) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// 🔵 CHANGE PASSWORD (logged in)
+export const changePassword = async (req: any, res: any) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Both passwords are required' });
+    }
+    if (newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: 'Password changed' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

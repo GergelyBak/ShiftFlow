@@ -3,7 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { setTheme } from '../../utils/theme';
 import { useTranslation } from 'react-i18next';
-import { Bell, Moon, Globe, LogOut, ChevronLeft } from 'lucide-react';
+import {
+  Bell,
+  Moon,
+  Globe,
+  LogOut,
+  ChevronLeft,
+  ChevronDown,
+  KeyRound,
+} from 'lucide-react';
+import { api } from '../../api/axios';
 
 const Toggle = ({
   checked,
@@ -49,6 +58,48 @@ const Settings = () => {
     i18n.changeLanguage(lang);
     localStorage.setItem('lang', lang);
   };
+
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword)
+      return toast.error(t('fillAllFields'));
+    if (newPassword.length < 6) return toast.error(t('passwordMinLength'));
+    if (newPassword !== confirmPassword)
+      return toast.error(t('passwordsMismatch'));
+
+    setSavingPassword(true);
+    try {
+      const token = localStorage.getItem('token');
+      await api.post(
+        '/auth/change-password',
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      toast.success(t('passwordUpdated'));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordForm(false);
+    } catch (error: any) {
+      toast.error(
+        error.response?.status === 400 &&
+          error.response?.data?.message === 'Current password is incorrect'
+          ? t('currentPasswordIncorrect')
+          : t('passwordChangeFailed'),
+      );
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const inputClass =
+    'w-full text-sm bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl px-3 py-2.5 border-none outline-none focus:ring-2 focus:ring-green-500';
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -118,6 +169,71 @@ const Settings = () => {
               <option value='en'>English</option>
               <option value='de'>Deutsch</option>
             </select>
+          </div>
+        </div>
+
+        {/* CHANGE PASSWORD */}
+        <div className='bg-slate-200/60 dark:bg-slate-800 rounded-3xl p-1.5'>
+          <div className='bg-white dark:bg-slate-900 rounded-2xl'>
+            <button
+              onClick={() => setShowPasswordForm(!showPasswordForm)}
+              className='w-full flex items-center justify-between px-4 py-3.5'
+            >
+              <div className='flex items-center gap-3'>
+                <KeyRound
+                  size={19}
+                  className='text-slate-500 dark:text-slate-400'
+                />
+                <span className='text-sm font-medium text-slate-800 dark:text-white'>
+                  {t('changePassword')}
+                </span>
+              </div>
+              <ChevronDown
+                size={18}
+                className={`text-slate-400 transition-transform ${
+                  showPasswordForm ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {showPasswordForm && (
+              <form
+                onSubmit={handleChangePassword}
+                className='px-4 pb-4 space-y-2.5'
+              >
+                <input
+                  type='password'
+                  autoComplete='current-password'
+                  placeholder={t('currentPassword')}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={inputClass}
+                />
+                <input
+                  type='password'
+                  autoComplete='new-password'
+                  placeholder={`${t('newPassword')} (${t('passwordMinChars')})`}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={inputClass}
+                />
+                <input
+                  type='password'
+                  autoComplete='new-password'
+                  placeholder={t('confirmPassword')}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={inputClass}
+                />
+                <button
+                  type='submit'
+                  disabled={savingPassword}
+                  className='w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-sm font-semibold rounded-xl py-2.5 transition-colors'
+                >
+                  {savingPassword ? t('saving') : t('changePassword')}
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

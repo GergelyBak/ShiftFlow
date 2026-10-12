@@ -35,6 +35,10 @@ i18n.use(initReactI18next).init({
         goToLogin: 'Go to login',
         passwordMinLength: 'Password must be at least 6 characters',
         passwordsMismatch: 'Passwords do not match',
+        changePassword: 'Change password',
+        currentPassword: 'Current password',
+        currentPasswordIncorrect: 'Current password is incorrect',
+        passwordChangeFailed: 'Could not change password',
         invalidResetLink: 'Invalid reset link',
         saving: 'Saving...',
 
@@ -260,6 +264,10 @@ i18n.use(initReactI18next).init({
         goToLogin: 'Zur Anmeldung',
         passwordMinLength: 'Passwort muss mindestens 6 Zeichen lang sein',
         passwordsMismatch: 'Passwörter stimmen nicht überein',
+        changePassword: 'Passwort ändern',
+        currentPassword: 'Aktuelles Passwort',
+        currentPasswordIncorrect: 'Aktuelles Passwort ist falsch',
+        passwordChangeFailed: 'Passwort konnte nicht geändert werden',
         invalidResetLink: 'Ungültiger Reset-Link',
         saving: 'Wird gespeichert...',
 
